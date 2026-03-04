@@ -187,29 +187,6 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Invoices (secondary) */}
-          <div className="rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-sm">Unpaid Invoices</h2>
-              <Button variant="ghost" size="sm" asChild><Link to="/billing" className="text-xs">View all</Link></Button>
-            </div>
-            {unpaidInvoices.length === 0
-              ? <p className="text-sm text-muted-foreground text-center py-3">All invoices paid ✓</p>
-              : <>
-                  <div className="text-lg font-bold text-destructive mb-1">£{totalUnpaid.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground mb-3">{unpaidInvoices.length} outstanding invoice{unpaidInvoices.length !== 1 ? "s" : ""}</p>
-                  {unpaidInvoices.slice(0, 2).map(inv => (
-                    <div key={inv.id} className="flex items-center justify-between py-1.5 border-b last:border-0">
-                      <div>
-                        <p className="text-xs font-medium">{inv.invoiceNumber}</p>
-                        <p className="text-xs text-muted-foreground">Due {new Date(inv.dueDate).toLocaleDateString("en-GB")}</p>
-                      </div>
-                      <p className="text-xs font-bold text-destructive">£{inv.total.toLocaleString()}</p>
-                    </div>
-                  ))}
-                </>
-            }
-          </div>
         </div>
       </div>
 
