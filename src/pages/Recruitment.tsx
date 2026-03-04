@@ -58,7 +58,7 @@ const INITIAL_VACANCIES: Vacancy[] = [
     salaryFrom: 26000, salaryTo: 29000,
     description: "We are looking for an experienced Senior Care Worker to join our residential team. You will support residents with daily living activities, lead a small team of care assistants, and ensure compliance with CQC standards.",
     requirements: "NVQ Level 3 in Health & Social Care or equivalent. Minimum 2 years experience in a care setting. Strong communication and leadership skills.",
-    status: "open", createdAt: "2026-02-10T09:00:00Z", applicationCount: 0,
+    status: "open", createdAt: "2026-02-10T09:00:00Z", applicationCount: 4,
   },
   {
     id: "v2", title: "Registered Nurse (RGN)", department: "Nursing",
@@ -66,7 +66,92 @@ const INITIAL_VACANCIES: Vacancy[] = [
     salaryFrom: 35000, salaryTo: 42000,
     description: "An exciting opportunity for a Registered General Nurse to join our growing nursing team. You will deliver clinical care, manage medication administration, and liaise with multidisciplinary teams.",
     requirements: "Active NMC PIN. Minimum 1 year post-qualifying experience. Experience in elderly or residential care preferred.",
-    status: "open", createdAt: "2026-02-15T09:00:00Z", applicationCount: 0,
+    status: "open", createdAt: "2026-02-15T09:00:00Z", applicationCount: 3,
+  },
+  {
+    id: "v3", title: "Care Assistant", department: "Residential Care",
+    location: "Leeds", contractType: "part_time",
+    salaryFrom: 20000, salaryTo: 22000,
+    description: "We are recruiting compassionate Care Assistants to provide personal care and support to residents in our care home. No experience necessary — full training provided.",
+    requirements: "Caring nature and good communication skills. Willingness to work flexible hours including weekends. DBS check required.",
+    status: "open", createdAt: "2026-02-20T09:00:00Z", applicationCount: 2,
+  },
+];
+
+const INITIAL_APPLICATIONS: Application[] = [
+  // Senior Care Worker (v1)
+  {
+    id: "a1", vacancyId: "v1", givenName: "Priya", familyName: "Sharma",
+    email: "priya.sharma@email.com", phone: "07712 345678", nationality: "Indian",
+    rightToWork: "yes_visa", coverLetter: "I have over 4 years of experience working in residential care settings and hold an NVQ Level 3. I am passionate about delivering person-centred care and have previously led a team of 5 care assistants during night shifts. I am currently on a Skilled Worker visa and am fully eligible to work in the UK.",
+    cvFileName: "Priya_Sharma_CV.pdf", cvFileSize: 245000,
+    linkedIn: "https://linkedin.com/in/priya-sharma",
+    status: "shortlisted", submittedAt: "2026-02-12T10:30:00Z",
+    interviewNotes: "Strong candidate — good communication and experience managing a small team. References verified. Invited to second interview.",
+  },
+  {
+    id: "a2", vacancyId: "v1", givenName: "James", familyName: "Okafor",
+    email: "james.okafor@email.com", phone: "07891 234567", nationality: "British",
+    rightToWork: "yes_unrestricted", coverLetter: "Born and raised in Birmingham, I have worked in care since leaving college. I have my NVQ Level 3 and completed a leadership course last year. I am eager to take on a senior role.",
+    cvFileName: "James_Okafor_CV.docx", cvFileSize: 189000,
+    status: "interview", submittedAt: "2026-02-13T14:00:00Z",
+    interviewNotes: "Interview held on 20 Feb. Performed well on scenario-based questions. Awaiting second interview slot confirmation.",
+  },
+  {
+    id: "a3", vacancyId: "v1", givenName: "Amina", familyName: "Hassan",
+    email: "amina.hassan@email.com", phone: "07765 432100", nationality: "Somali",
+    rightToWork: "requires_sponsorship", coverLetter: "I am a dedicated care professional with 3 years of experience. I require sponsorship to work in the UK.",
+    cvFileName: "Amina_Hassan_CV.pdf", cvFileSize: 210000,
+    status: "rejected", submittedAt: "2026-02-14T09:15:00Z",
+    rejectionReason: "Candidate requires Skilled Worker visa sponsorship which is not available for this role at this time. Will keep on file for future sponsored positions.",
+  },
+  {
+    id: "a4", vacancyId: "v1", givenName: "Tom", familyName: "Hutchins",
+    email: "tom.hutchins@email.com", phone: "07923 001122", nationality: "British",
+    rightToWork: "yes_unrestricted", coverLetter: "I am looking to step into my first senior role. I have 18 months of care experience and am currently completing my NVQ Level 3.",
+    cvFileName: "Tom_Hutchins_CV.pdf", cvFileSize: 165000,
+    status: "new", submittedAt: "2026-02-18T16:45:00Z",
+  },
+  // Registered Nurse (v2)
+  {
+    id: "a5", vacancyId: "v2", givenName: "Lakshmi", familyName: "Nair",
+    email: "lakshmi.nair@email.com", phone: "07400 112233", nationality: "Indian",
+    rightToWork: "yes_visa", coverLetter: "I am a qualified RGN registered with the NMC (PIN 12A3456B) with 3 years of post-qualifying experience in elderly care settings in the UK. I am reliable, compassionate, and skilled in medication management and wound care.",
+    cvFileName: "Lakshmi_Nair_CV.pdf", cvFileSize: 310000,
+    linkedIn: "https://linkedin.com/in/lakshmi-nair-rn",
+    status: "offered", submittedAt: "2026-02-17T11:00:00Z",
+    interviewNotes: "Excellent candidate. NMC PIN verified. Strong clinical knowledge. Referenced checked. Verbal offer made on 25 Feb — awaiting written acceptance.",
+  },
+  {
+    id: "a6", vacancyId: "v2", givenName: "David", familyName: "Owusu",
+    email: "david.owusu@email.com", phone: "07388 556677", nationality: "Ghanaian",
+    rightToWork: "yes_unrestricted", coverLetter: "British citizen with NMC registration and 2 years' experience in a Manchester nursing home. Passionate about improving standards of care for elderly residents.",
+    cvFileName: "David_Owusu_CV.docx", cvFileSize: 198000,
+    status: "shortlisted", submittedAt: "2026-02-19T08:30:00Z",
+    interviewNotes: "Good application. NMC PIN confirmed active. Invited for interview — first available date 5 March.",
+  },
+  {
+    id: "a7", vacancyId: "v2", givenName: "Sarah", familyName: "Connelly",
+    email: "sarah.connelly@email.com", phone: "07511 998877", nationality: "British",
+    rightToWork: "yes_unrestricted", coverLetter: "Newly qualified RGN looking for my first permanent position in elderly care. I completed my training at Manchester University and have 6 months' experience from placements.",
+    cvFileName: "Sarah_Connelly_CV.pdf", cvFileSize: 174000,
+    status: "new", submittedAt: "2026-02-22T13:20:00Z",
+  },
+  // Care Assistant (v3)
+  {
+    id: "a8", vacancyId: "v3", givenName: "Maria", familyName: "Kowalski",
+    email: "maria.kowalski@email.com", phone: "07633 445566", nationality: "Polish",
+    rightToWork: "yes_unrestricted", coverLetter: "I have been living in the UK for 5 years and have volunteered at a local care home. I am kind, patient, and eager to start a career in care.",
+    cvFileName: "Maria_Kowalski_CV.pdf", cvFileSize: 145000,
+    status: "interview", submittedAt: "2026-02-23T10:00:00Z",
+    interviewNotes: "Warm personality. No formal care experience but strong volunteering background. Interview scheduled for 3 March.",
+  },
+  {
+    id: "a9", vacancyId: "v3", givenName: "Kevin", familyName: "Brown",
+    email: "kevin.brown@email.com", phone: "07744 667788", nationality: "British",
+    rightToWork: "yes_unrestricted", coverLetter: "Looking for a part-time role to complement my studies. I have always wanted to work in care and believe I have the empathy and dedication to thrive in this role.",
+    cvFileName: "Kevin_Brown_CV.docx", cvFileSize: 132000,
+    status: "new", submittedAt: "2026-02-24T15:10:00Z",
   },
 ];
 
@@ -587,7 +672,7 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp }: 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function RecruitmentPage() {
   const [vacancies, setVacancies] = useState<Vacancy[]>(INITIAL_VACANCIES);
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<Application[]>(INITIAL_APPLICATIONS);
   const [showAddVacancy, setShowAddVacancy] = useState(false);
   const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
   const [showApply, setShowApply] = useState(false);
