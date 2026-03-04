@@ -414,7 +414,6 @@ export default function SettingsPage() {
           <TabsTrigger value="company"><Building2 className="h-3.5 w-3.5 mr-1.5" />Company</TabsTrigger>
           <TabsTrigger value="licence"><ShieldCheck className="h-3.5 w-3.5 mr-1.5" />Sponsor Licence</TabsTrigger>
           <TabsTrigger value="locations"><MapPin className="h-3.5 w-3.5 mr-1.5" />Locations</TabsTrigger>
-          <TabsTrigger value="leave"><CalendarDays className="h-3.5 w-3.5 mr-1.5" />Leave Management</TabsTrigger>
           <TabsTrigger value="notifications"><Bell className="h-3.5 w-3.5 mr-1.5" />Notifications</TabsTrigger>
           <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1.5" />Documents</TabsTrigger>
           {isInternal && <TabsTrigger value="system"><ShieldCheck className="h-3.5 w-3.5 mr-1.5" />System</TabsTrigger>}
@@ -460,10 +459,6 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="leave" className="mt-5">
-          <LeaveManagementTab />
         </TabsContent>
 
         <TabsContent value="notifications" className="mt-5">
