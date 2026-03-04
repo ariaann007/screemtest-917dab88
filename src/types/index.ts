@@ -53,6 +53,21 @@ export interface User {
   lastLogin?: string;
 }
 
+export interface LeaverChecklist {
+  reportingSubmitted: boolean;
+  finalPayslipUploaded: boolean;
+  finalAttendanceUploaded: boolean;
+  lastContactDetailsStored: boolean;
+}
+
+export interface AbsenceRecord {
+  id: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  workingDays: number;
+}
+
 export interface Worker {
   id: string;
   tenantId: string;
@@ -81,6 +96,43 @@ export interface Worker {
   weeklyHours?: number;
   status: "active" | "inactive" | "pending";
   createdAt: string;
+  // Leaver fields
+  leaverStatus?: "leaver" | "active";
+  retentionExpiryDate?: string;
+  leaverChecklist?: LeaverChecklist;
+  // Compliance
+  complianceScore?: number;
+  absenceRecords?: AbsenceRecord[];
+}
+
+export interface SponsorLicence {
+  id: string;
+  tenantId: string;
+  licenceNumber: string;
+  type: "A-rated" | "B-rated";
+  rating: "A" | "B";
+  issueDate: string;
+  expiryDate: string;
+  renewalDate?: string;
+  cosDefinedAvailable: number;
+  cosUndefinedAvailable: number;
+  cosUsed: number;
+}
+
+export interface VisaRule {
+  visaType: string;
+  maxHoursPerWeek: number;
+  termMaxHours?: number;
+  requiresTermDates: boolean;
+  allowsSupplementaryWork: boolean;
+  requiresSecondaryEmploymentLetter: boolean;
+}
+
+export interface SocGoingRate {
+  socCode: string;
+  title: string;
+  minAnnualSalary: number;
+  minHourlySalary: number;
 }
 
 export interface WorkLocation {
