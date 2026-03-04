@@ -4,12 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   Plus, X, Briefcase, MapPin, Clock, Users, ChevronRight,
   CheckCircle2, FileText, ArrowLeft, Search, Upload, MessageSquare,
-  XCircle, Paperclip,
+  XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp,
 } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type ContractType = "full_time" | "part_time" | "contract" | "bank";
@@ -48,6 +50,9 @@ interface Application {
   submittedAt: string;
   interviewNotes?: string;
   rejectionReason?: string;
+  interviewDate?: string;
+  interviewerName?: string;
+  movedToPeople?: boolean;
 }
 
 // ── Demo Data ──────────────────────────────────────────────────────────────────
@@ -88,6 +93,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     linkedIn: "https://linkedin.com/in/priya-sharma",
     status: "shortlisted", submittedAt: "2026-02-12T10:30:00Z",
     interviewNotes: "Strong candidate — good communication and experience managing a small team. References verified. Invited to second interview.",
+    interviewDate: "2026-02-28", interviewerName: "Sarah Mitchell",
   },
   {
     id: "a2", vacancyId: "v1", givenName: "James", familyName: "Okafor",
@@ -96,6 +102,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     cvFileName: "James_Okafor_CV.docx", cvFileSize: 189000,
     status: "interview", submittedAt: "2026-02-13T14:00:00Z",
     interviewNotes: "Interview held on 20 Feb. Performed well on scenario-based questions. Awaiting second interview slot confirmation.",
+    interviewDate: "2026-02-20", interviewerName: "Sarah Mitchell",
   },
   {
     id: "a3", vacancyId: "v1", givenName: "Amina", familyName: "Hassan",
@@ -121,6 +128,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     linkedIn: "https://linkedin.com/in/lakshmi-nair-rn",
     status: "offered", submittedAt: "2026-02-17T11:00:00Z",
     interviewNotes: "Excellent candidate. NMC PIN verified. Strong clinical knowledge. Referenced checked. Verbal offer made on 25 Feb — awaiting written acceptance.",
+    interviewDate: "2026-02-22", interviewerName: "Dr. Michael Osei",
   },
   {
     id: "a6", vacancyId: "v2", givenName: "David", familyName: "Owusu",
@@ -129,6 +137,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     cvFileName: "David_Owusu_CV.docx", cvFileSize: 198000,
     status: "shortlisted", submittedAt: "2026-02-19T08:30:00Z",
     interviewNotes: "Good application. NMC PIN confirmed active. Invited for interview — first available date 5 March.",
+    interviewDate: "2026-03-05", interviewerName: "Dr. Michael Osei",
   },
   {
     id: "a7", vacancyId: "v2", givenName: "Sarah", familyName: "Connelly",
@@ -145,6 +154,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     cvFileName: "Maria_Kowalski_CV.pdf", cvFileSize: 145000,
     status: "interview", submittedAt: "2026-02-23T10:00:00Z",
     interviewNotes: "Warm personality. No formal care experience but strong volunteering background. Interview scheduled for 3 March.",
+    interviewDate: "2026-03-03", interviewerName: "Helen Clarke",
   },
   {
     id: "a9", vacancyId: "v3", givenName: "Kevin", familyName: "Brown",
@@ -170,6 +180,18 @@ const APP_STATUS_COLORS: Record<ApplicationStatus, string> = {
   offered: "bg-success/10 text-success border-success/20",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
 };
+
+// Candidate required documents
+const CANDIDATE_DOCS = [
+  { id: "cd1", name: "Photo ID / Passport", required: true, description: "Valid passport or national identity document" },
+  { id: "cd2", name: "Right to Work Evidence", required: true, description: "Visa, BRP card, or share code evidence" },
+  { id: "cd3", name: "Employment Contract", required: true, description: "Signed offer letter and employment contract" },
+  { id: "cd4", name: "Training Contract", required: false, description: "Any training or apprenticeship agreements" },
+  { id: "cd5", name: "DBS Certificate", required: true, description: "Enhanced DBS check (dated within 12 months)" },
+  { id: "cd6", name: "Professional Registration", required: false, description: "NMC PIN, NVQ certificate, or other professional credentials" },
+  { id: "cd7", name: "References", required: true, description: "Two professional references" },
+  { id: "cd8", name: "Bank Details Form", required: true, description: "Completed payroll bank details form" },
+];
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -338,17 +360,9 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
             <div className="space-y-3">
               <div><Label>Cover Letter / Supporting Statement</Label><Textarea className="mt-1 min-h-[120px]" value={form.coverLetter} onChange={e => set("coverLetter", e.target.value)} placeholder="Tell us why you're a great fit for this role…" /></div>
               <div><Label>LinkedIn Profile URL</Label><Input className="mt-1" value={form.linkedIn} onChange={e => set("linkedIn", e.target.value)} placeholder="https://linkedin.com/in/…" /></div>
-
-              {/* CV Upload */}
               <div>
                 <Label>CV / Resume</Label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
+                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleFileChange} />
                 {cvFile ? (
                   <div className="mt-1 flex items-center gap-2 border rounded-lg p-3 bg-primary/5 border-primary/20">
                     <Paperclip className="h-4 w-4 text-primary shrink-0" />
@@ -356,19 +370,14 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
                       <p className="text-sm font-medium truncate">{cvFile.name}</p>
                       <p className="text-xs text-muted-foreground">{formatFileSize(cvFile.size)}</p>
                     </div>
-                    <button
-                      onClick={() => { setCvFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                      className="h-6 w-6 rounded-full hover:bg-destructive/10 flex items-center justify-center transition-colors"
-                    >
+                    <button onClick={() => { setCvFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                      className="h-6 w-6 rounded-full hover:bg-destructive/10 flex items-center justify-center transition-colors">
                       <X className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="mt-1 w-full flex items-center gap-2 border border-dashed rounded-lg p-3 text-sm text-muted-foreground hover:bg-muted/30 hover:border-primary/40 transition-all"
-                  >
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    className="mt-1 w-full flex items-center gap-2 border border-dashed rounded-lg p-3 text-sm text-muted-foreground hover:bg-muted/30 hover:border-primary/40 transition-all">
                     <Upload className="h-4 w-4 shrink-0" />
                     <span>Click to upload CV — PDF, DOC, or DOCX</span>
                   </button>
@@ -389,39 +398,64 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
 }
 
 // ── Application Detail Modal ───────────────────────────────────────────────────
-function ApplicationDetail({ app, onClose, onUpdate }: {
+function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeople }: {
   app: Application;
+  vacancyTitle?: string;
   onClose: () => void;
   onUpdate: (id: string, changes: Partial<Application>) => void;
+  onMoveToPeople?: (app: Application) => void;
 }) {
   const [status, setStatus] = useState<ApplicationStatus>(app.status);
   const [interviewNotes, setInterviewNotes] = useState(app.interviewNotes || "");
   const [rejectionReason, setRejectionReason] = useState(app.rejectionReason || "");
+  const [interviewDate, setInterviewDate] = useState(app.interviewDate || "");
+  const [interviewerName, setInterviewerName] = useState(app.interviewerName || "");
   const [saved, setSaved] = useState(false);
+  const [movedToPeople, setMovedToPeople] = useState(app.movedToPeople || false);
 
   const handleSave = () => {
-    onUpdate(app.id, { status, interviewNotes, rejectionReason });
+    onUpdate(app.id, { status, interviewNotes, rejectionReason, interviewDate, interviewerName });
     setSaved(true);
     setTimeout(() => { setSaved(false); onClose(); }, 800);
   };
 
+  const handleMoveToPeople = () => {
+    onUpdate(app.id, { movedToPeople: true, status: "offered" });
+    onMoveToPeople?.(app);
+    setMovedToPeople(true);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-lg bg-background rounded-xl shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-lg bg-background rounded-xl shadow-2xl overflow-y-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
           <div>
             <h2 className="font-bold">{app.givenName} {app.familyName}</h2>
-            <p className="text-xs text-muted-foreground">Applied {new Date(app.submittedAt).toLocaleDateString("en-GB")}</p>
+            <p className="text-xs text-muted-foreground">
+              {vacancyTitle && <span>{vacancyTitle} · </span>}
+              Applied {new Date(app.submittedAt).toLocaleDateString("en-GB")}
+            </p>
           </div>
           <button onClick={onClose} className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="p-5 space-y-5">
-          {/* Status badge */}
+          {/* Status badge + Move to People */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", APP_STATUS_COLORS[app.status])}>
               {APP_STATUS_LABELS[app.status]}
             </span>
+            {(app.status === "offered" || status === "offered") && !movedToPeople && (
+              <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-success border-success/30 hover:bg-success/10" onClick={handleMoveToPeople}>
+                <UserCheck className="h-3.5 w-3.5" />
+                Add to Live Workers
+              </Button>
+            )}
+            {movedToPeople && (
+              <span className="text-xs text-success flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Added to People
+              </span>
+            )}
           </div>
 
           {/* Contact info */}
@@ -448,6 +482,7 @@ function ApplicationDetail({ app, onClose, onUpdate }: {
                 <p className="text-sm font-medium truncate">{app.cvFileName}</p>
                 {app.cvFileSize && <p className="text-xs text-muted-foreground">{formatFileSize(app.cvFileSize)}</p>}
               </div>
+              <Button size="sm" variant="ghost" className="h-7 text-xs">View</Button>
             </div>
           )}
 
@@ -486,9 +521,28 @@ function ApplicationDetail({ app, onClose, onUpdate }: {
             </div>
           </div>
 
+          {/* Interview Details */}
+          {(status === "interview" || status === "shortlisted" || status === "offered" || interviewDate) && (
+            <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />Interview Details
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Interview Date</Label>
+                  <Input type="date" className="mt-1 h-8 text-xs" value={interviewDate} onChange={e => setInterviewDate(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Interviewer Name</Label>
+                  <Input className="mt-1 h-8 text-xs" value={interviewerName} onChange={e => setInterviewerName(e.target.value)} placeholder="e.g. Sarah Mitchell" />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Interview Notes */}
           <div>
-            <Label className="flex items-center gap-1.5 mb-1">
+            <Label className="flex items-center gap-1.5 mb-1 text-sm">
               <MessageSquare className="h-3.5 w-3.5" />
               Interview Notes
             </Label>
@@ -500,12 +554,12 @@ function ApplicationDetail({ app, onClose, onUpdate }: {
             />
           </div>
 
-          {/* Rejection Reason — shown when rejected */}
+          {/* Rejection Reason */}
           {(status === "rejected" || rejectionReason) && (
             <div>
-              <Label className="flex items-center gap-1.5 mb-1 text-destructive">
+              <Label className="flex items-center gap-1.5 mb-1 text-destructive text-sm">
                 <XCircle className="h-3.5 w-3.5" />
-                Rejection Reason
+                Rejection Reason *
               </Label>
               <Textarea
                 className="min-h-[70px] text-sm border-destructive/30 focus-visible:ring-destructive/30"
@@ -529,23 +583,26 @@ function ApplicationDetail({ app, onClose, onUpdate }: {
 }
 
 // ── Vacancy Detail View ────────────────────────────────────────────────────────
-function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp }: {
+function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, onMoveToPeople }: {
   vacancy: Vacancy;
   applications: Application[];
   onBack: () => void;
   onApply: () => void;
   onUpdateApp: (id: string, changes: Partial<Application>) => void;
+  onMoveToPeople: (app: Application) => void;
 }) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [appFilter, setAppFilter] = useState<ApplicationStatus | "all">("all");
 
   const filteredApps = appFilter === "all" ? applications : applications.filter(a => a.status === appFilter);
 
-  // When an app is updated, re-sync the selected app reference
   const handleUpdate = (id: string, changes: Partial<Application>) => {
     onUpdateApp(id, changes);
     setSelectedApp(null);
   };
+
+  // pipeline funnel counts
+  const stages: ApplicationStatus[] = ["new", "shortlisted", "interview", "offered", "rejected"];
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -595,6 +652,34 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp }: 
         </div>
       </div>
 
+      {/* Pipeline funnel */}
+      <div className="rounded-xl border bg-card p-5">
+        <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><TrendingUp className="h-4 w-4" />Candidate Pipeline</h3>
+        <div className="flex gap-2 items-end">
+          {stages.map((s, i) => {
+            const count = applications.filter(a => a.status === s).length;
+            const maxCount = Math.max(...stages.map(st => applications.filter(a => a.status === st).length), 1);
+            const heightPct = Math.max((count / maxCount) * 80, 12);
+            return (
+              <button
+                key={s}
+                onClick={() => setAppFilter(s)}
+                className={cn("flex-1 flex flex-col items-center gap-1 group", appFilter === s && "opacity-100")}
+              >
+                <span className="text-xs font-bold">{count}</span>
+                <div
+                  className={cn("w-full rounded-t-md transition-all", APP_STATUS_COLORS[s].split(" ")[0])}
+                  style={{ height: `${heightPct}px` }}
+                />
+                <span className={cn("text-[10px] font-medium", APP_STATUS_COLORS[s].split(" ")[1])}>
+                  {APP_STATUS_LABELS[s]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Applications Panel */}
       <div className="rounded-xl border bg-card p-5">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -603,7 +688,6 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp }: 
             Applications
             <span className="text-xs bg-muted rounded-full px-2 py-0.5">{applications.length}</span>
           </h3>
-          {/* Pipeline filter */}
           <div className="flex gap-1 flex-wrap">
             {(["all", ...Object.keys(APP_STATUS_LABELS)] as const).map(s => {
               const count = s === "all" ? applications.length : applications.filter(a => a.status === s).length;
@@ -645,8 +729,13 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp }: 
                     <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
                     {app.cvFileName && <span title="CV attached"><Paperclip className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
                     {app.interviewNotes && <span title="Has interview notes"><MessageSquare className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
+                    {app.movedToPeople && <span title="Added to People"><UserCheck className="h-3 w-3 text-success shrink-0" /></span>}
                   </div>
-                  <p className="text-xs text-muted-foreground">{app.email} · Applied {new Date(app.submittedAt).toLocaleDateString("en-GB")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {app.email}
+                    {app.interviewDate && <span> · Interview: {new Date(app.interviewDate).toLocaleDateString("en-GB")}</span>}
+                    {app.interviewerName && <span> ({app.interviewerName})</span>}
+                  </p>
                 </div>
                 <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
                   {APP_STATUS_LABELS[app.status]}
@@ -661,10 +750,231 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp }: 
       {selectedApp && (
         <ApplicationDetail
           app={{ ...selectedApp, ...applications.find(a => a.id === selectedApp.id) }}
+          vacancyTitle={vacancy.title}
           onClose={() => setSelectedApp(null)}
           onUpdate={handleUpdate}
+          onMoveToPeople={onMoveToPeople}
         />
       )}
+    </div>
+  );
+}
+
+// ── Applicant Tracking Tab ─────────────────────────────────────────────────────
+function ApplicantTrackingTab({ applications, vacancies, onUpdateApp, onMoveToPeople }: {
+  applications: Application[];
+  vacancies: Vacancy[];
+  onUpdateApp: (id: string, changes: Partial<Application>) => void;
+  onMoveToPeople: (app: Application) => void;
+}) {
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [stageFilter, setStageFilter] = useState<ApplicationStatus | "all">("all");
+  const [search, setSearch] = useState("");
+
+  const filtered = applications.filter(a => {
+    const matchStage = stageFilter === "all" || a.status === stageFilter;
+    const matchSearch = !search || `${a.givenName} ${a.familyName} ${a.email}`.toLowerCase().includes(search.toLowerCase());
+    return matchStage && matchSearch;
+  });
+
+  const getVacancyTitle = (id: string) => vacancies.find(v => v.id === id)?.title || "Unknown Role";
+
+  // Overall stats
+  const total = applications.length;
+  const inPipeline = applications.filter(a => ["shortlisted", "interview", "offered"].includes(a.status)).length;
+  const offers = applications.filter(a => a.status === "offered").length;
+  const rejections = applications.filter(a => a.status === "rejected").length;
+
+  return (
+    <div className="space-y-5">
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total Applicants", value: total, color: "text-foreground" },
+          { label: "In Pipeline", value: inPipeline, color: "text-secondary" },
+          { label: "Offers Made", value: offers, color: "text-success" },
+          { label: "Rejected", value: rejections, color: "text-destructive" },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl border bg-card p-4 text-center">
+            <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-9 h-9" placeholder="Search candidates…" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          <button
+            onClick={() => setStageFilter("all")}
+            className={cn("text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
+              stageFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"
+            )}
+          >
+            All Stages
+          </button>
+          {(Object.keys(APP_STATUS_LABELS) as ApplicationStatus[]).map(s => (
+            <button
+              key={s}
+              onClick={() => setStageFilter(s)}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
+                stageFilter === s ? APP_STATUS_COLORS[s] : "border-border text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {APP_STATUS_LABELS[s]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* All Candidates Table */}
+      <div className="rounded-xl border bg-card overflow-hidden">
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="font-medium text-sm">No candidates found</p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {filtered.map(app => (
+              <button
+                key={app.id}
+                onClick={() => setSelectedApp(app)}
+                className="w-full flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors text-left group"
+              >
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                  {app.givenName[0]}{app.familyName[0]}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                    {app.cvFileName && <Paperclip className="h-3 w-3 text-muted-foreground shrink-0" />}
+                    {app.interviewNotes && <MessageSquare className="h-3 w-3 text-muted-foreground shrink-0" />}
+                    {app.movedToPeople && <UserCheck className="h-3 w-3 text-success shrink-0" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{getVacancyTitle(app.vacancyId)} · {app.email}</p>
+                </div>
+                <div className="text-right shrink-0 hidden sm:block">
+                  {app.interviewDate && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                      <Calendar className="h-3 w-3" />{new Date(app.interviewDate).toLocaleDateString("en-GB")}
+                    </p>
+                  )}
+                  {app.interviewerName && <p className="text-xs text-muted-foreground">{app.interviewerName}</p>}
+                </div>
+                <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
+                  {APP_STATUS_LABELS[app.status]}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedApp && (
+        <ApplicationDetail
+          app={{ ...selectedApp, ...applications.find(a => a.id === selectedApp.id) }}
+          vacancyTitle={vacancies.find(v => v.id === selectedApp.vacancyId)?.title}
+          onClose={() => setSelectedApp(null)}
+          onUpdate={(id, changes) => { onUpdateApp(id, changes); setSelectedApp(null); }}
+          onMoveToPeople={onMoveToPeople}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Documents Tab ──────────────────────────────────────────────────────────────
+function DocumentsTab() {
+  const [docStatuses, setDocStatuses] = useState<Record<string, "present" | "missing" | "pending">>(
+    Object.fromEntries(CANDIDATE_DOCS.map(d => [d.id, d.id === "cd1" || d.id === "cd3" ? "present" : d.id === "cd2" ? "present" : d.id === "cd5" ? "pending" : "missing"]))
+  );
+
+  const present = Object.values(docStatuses).filter(s => s === "present").length;
+  const pending = Object.values(docStatuses).filter(s => s === "pending").length;
+  const missing = Object.values(docStatuses).filter(s => s === "missing").length;
+  const total = CANDIDATE_DOCS.length;
+  const pct = Math.round((present / total) * 100);
+
+  const statusColor = {
+    present: "bg-success/10 text-success border-success/20",
+    pending: "bg-warning/10 text-warning border-warning/20",
+    missing: "bg-destructive/10 text-destructive border-destructive/20",
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Summary */}
+      <div className="rounded-xl border bg-card p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Onboarding Document Checklist</h3>
+          <span className={cn("text-sm font-bold", pct === 100 ? "text-success" : pct > 60 ? "text-warning" : "text-destructive")}>
+            {pct}% complete
+          </span>
+        </div>
+        <div className="w-full bg-muted rounded-full h-2 mb-3">
+          <div
+            className={cn("h-2 rounded-full transition-all", pct === 100 ? "bg-success" : pct > 60 ? "bg-warning" : "bg-destructive")}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="flex gap-4 text-sm">
+          <span className="text-success font-medium">{present} present</span>
+          <span className="text-warning font-medium">{pending} pending</span>
+          <span className="text-destructive font-medium">{missing} missing</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          These are standard onboarding documents required for new starters. Ensure all required items are collected before first day.
+        </p>
+      </div>
+
+      {/* Document list */}
+      <div className="rounded-xl border bg-card divide-y overflow-hidden">
+        {CANDIDATE_DOCS.map(doc => {
+          const s = docStatuses[doc.id];
+          return (
+            <div key={doc.id} className="flex items-center gap-3 p-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{doc.name}</p>
+                  {doc.required && <span className="text-[10px] text-destructive font-semibold uppercase tracking-wide">Required</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">{doc.description}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", statusColor[s])}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </span>
+                {s === "present" ? (
+                  <Button size="sm" variant="ghost" className="h-7 text-xs">View</Button>
+                ) : (
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                    onClick={() => setDocStatuses(p => ({ ...p, [doc.id]: "pending" }))}>
+                    <Upload className="h-3 w-3" />Upload
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Additional info */}
+      <div className="rounded-xl border bg-muted/30 p-4">
+        <h4 className="font-semibold text-sm mb-2">Document Retention Policy</h4>
+        <ul className="text-xs text-muted-foreground space-y-1">
+          <li>• Employment records must be retained for a minimum of 6 years after employment ends</li>
+          <li>• Right to Work documents must be kept for the duration of employment + 2 years</li>
+          <li>• DBS certificates should be re-checked every 3 years</li>
+          <li>• Training records should be updated as courses are completed</li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -678,6 +988,9 @@ export default function RecruitmentPage() {
   const [showApply, setShowApply] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<VacancyStatus | "all">("all");
+  const [movedToPeopleAlert, setMovedToPeopleAlert] = useState<string | null>(null);
+
+  const { isInternal } = useApp();
 
   const filtered = vacancies.filter(v => {
     const matchSearch = v.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -698,6 +1011,11 @@ export default function RecruitmentPage() {
     setApplications(prev => prev.map(a => a.id === appId ? { ...a, ...changes } : a));
   };
 
+  const handleMoveToPeople = (app: Application) => {
+    setMovedToPeopleAlert(`${app.givenName} ${app.familyName} has been added to the People (Workers) section.`);
+    setTimeout(() => setMovedToPeopleAlert(null), 5000);
+  };
+
   const vacancyApplications = selectedVacancy
     ? applications.filter(a => a.vacancyId === selectedVacancy.id)
     : [];
@@ -711,6 +1029,7 @@ export default function RecruitmentPage() {
           onBack={() => setSelectedVacancy(null)}
           onApply={() => setShowApply(true)}
           onUpdateApp={handleUpdateApp}
+          onMoveToPeople={handleMoveToPeople}
         />
         {showApply && (
           <ApplyModal
@@ -729,101 +1048,137 @@ export default function RecruitmentPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Recruitment</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage vacancies and candidate applications</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage vacancies, candidates and onboarding documents</p>
         </div>
         <Button onClick={() => setShowAddVacancy(true)}>
           <Plus className="h-4 w-4 mr-1" /> Post Vacancy
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">Open Vacancies</p>
-          <p className="text-2xl font-bold">{vacancies.filter(v => v.status === "open").length}</p>
+      {/* Moved to people alert */}
+      {movedToPeopleAlert && (
+        <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3 text-success text-sm">
+          <UserCheck className="h-4 w-4 shrink-0" />
+          <span>{movedToPeopleAlert}</span>
+          <span className="text-xs text-success/70 ml-auto">Navigate to People to complete their worker profile.</span>
         </div>
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">Total Applications</p>
-          <p className="text-2xl font-bold">{applications.length}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">In Pipeline</p>
-          <p className="text-2xl font-bold">{applications.filter(a => a.status === "shortlisted" || a.status === "interview" || a.status === "offered").length}</p>
-        </div>
-      </div>
+      )}
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search vacancies…" value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-        <div className="flex gap-1">
-          {(["all", "open", "draft", "closed"] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={cn("text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
-                statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"
-              )}
-            >
-              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="vacancies">
+        <TabsList>
+          <TabsTrigger value="vacancies"><Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies</TabsTrigger>
+          <TabsTrigger value="tracking"><Filter className="h-3.5 w-3.5 mr-1.5" />Applicant Tracking</TabsTrigger>
+          <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1.5" />Documents</TabsTrigger>
+        </TabsList>
 
-      {/* Vacancy list */}
-      <div className="space-y-3">
-        {filtered.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <Briefcase className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No vacancies found</p>
-            <p className="text-sm mt-1">Post your first vacancy to get started</p>
+        {/* ── Vacancies Tab ── */}
+        <TabsContent value="vacancies" className="mt-5 space-y-5">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Open Vacancies</p>
+              <p className="text-2xl font-bold">{vacancies.filter(v => v.status === "open").length}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Total Applications</p>
+              <p className="text-2xl font-bold">{applications.length}</p>
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground font-medium mb-1">In Pipeline</p>
+              <p className="text-2xl font-bold">{applications.filter(a => ["shortlisted", "interview", "offered"].includes(a.status)).length}</p>
+            </div>
           </div>
-        )}
-        {filtered.map(v => {
-          const appCount = applications.filter(a => a.vacancyId === v.id).length;
-          return (
-            <button
-              key={v.id}
-              onClick={() => setSelectedVacancy(v)}
-              className="w-full rounded-xl border bg-card p-5 text-left hover:shadow-md transition-all group"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-base">{v.title}</h3>
-                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border",
-                      v.status === "open" ? "bg-success/10 text-success border-success/20"
-                      : v.status === "draft" ? "bg-muted text-muted-foreground border-border"
-                      : "bg-destructive/10 text-destructive border-destructive/20"
-                    )}>
-                      {v.status.charAt(0).toUpperCase() + v.status.slice(1)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{v.location}</span>
-                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{CONTRACT_LABELS[v.contractType]}</span>
-                    <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" />{v.department}</span>
-                    {v.salaryFrom > 0 && <span>£{v.salaryFrom.toLocaleString()} – £{v.salaryTo.toLocaleString()}</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{appCount}</p>
-                    <p className="text-xs text-muted-foreground">applicant{appCount !== 1 ? "s" : ""}</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+
+          {/* Filters */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input className="pl-9" placeholder="Search vacancies…" value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <div className="flex gap-1">
+              {(["all", "open", "draft", "closed"] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={cn("text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
+                    statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Vacancy list */}
+          <div className="space-y-3">
+            {filtered.length === 0 && (
+              <div className="text-center py-16 text-muted-foreground">
+                <Briefcase className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No vacancies found</p>
+                <p className="text-sm mt-1">Post your first vacancy to get started</p>
               </div>
-              {v.description && (
-                <p className="text-sm text-muted-foreground mt-3 line-clamp-2">{v.description}</p>
-              )}
-            </button>
-          );
-        })}
-      </div>
+            )}
+            {filtered.map(v => {
+              const appCount = applications.filter(a => a.vacancyId === v.id).length;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedVacancy(v)}
+                  className="w-full rounded-xl border bg-card p-5 text-left hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-base">{v.title}</h3>
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border",
+                          v.status === "open" ? "bg-success/10 text-success border-success/20"
+                          : v.status === "draft" ? "bg-muted text-muted-foreground border-border"
+                          : "bg-destructive/10 text-destructive border-destructive/20"
+                        )}>
+                          {v.status.charAt(0).toUpperCase() + v.status.slice(1)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{v.location}</span>
+                        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{CONTRACT_LABELS[v.contractType]}</span>
+                        <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" />{v.department}</span>
+                        {v.salaryFrom > 0 && <span>£{v.salaryFrom.toLocaleString()} – £{v.salaryTo.toLocaleString()}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <p className="text-lg font-bold">{appCount}</p>
+                        <p className="text-xs text-muted-foreground">applicant{appCount !== 1 ? "s" : ""}</p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  {v.description && (
+                    <p className="text-sm text-muted-foreground mt-3 line-clamp-2">{v.description}</p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </TabsContent>
+
+        {/* ── Applicant Tracking Tab ── */}
+        <TabsContent value="tracking" className="mt-5">
+          <ApplicantTrackingTab
+            applications={applications}
+            vacancies={vacancies}
+            onUpdateApp={handleUpdateApp}
+            onMoveToPeople={handleMoveToPeople}
+          />
+        </TabsContent>
+
+        {/* ── Documents Tab ── */}
+        <TabsContent value="documents" className="mt-5">
+          <DocumentsTab />
+        </TabsContent>
+      </Tabs>
 
       {showAddVacancy && (
         <AddVacancyModal onClose={() => setShowAddVacancy(false)} onAdd={handleAddVacancy} />
