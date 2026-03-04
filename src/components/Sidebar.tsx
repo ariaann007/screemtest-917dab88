@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Award, FileText, Users, InboxIcon,
-  Settings, ShieldCheck, Building2, UserPlus, CalendarDays, FolderOpen,
+  Settings, ShieldCheck, Building2, UserPlus, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
@@ -14,7 +14,6 @@ const clientNav = [
   { label: "Recruitment", href: "/recruitment", icon: UserPlus },
   { label: "Requests", href: "/requests", icon: InboxIcon },
   { label: "Leave", href: "/leave", icon: CalendarDays },
-  { label: "Documents", href: "/documents", icon: FolderOpen },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -26,7 +25,6 @@ const internalNav = [
   { label: "Recruitment", href: "/recruitment", icon: UserPlus },
   { label: "Requests", href: "/requests", icon: InboxIcon },
   { label: "Leave", href: "/leave", icon: CalendarDays },
-  { label: "Documents", href: "/documents", icon: FolderOpen },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Admin", href: "/admin", icon: ShieldCheck },
 ];
