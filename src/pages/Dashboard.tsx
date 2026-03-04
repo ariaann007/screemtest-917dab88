@@ -1,54 +1,53 @@
 import { useApp } from "@/context/AppContext";
-import { DEMO_CASES, DEMO_WORKERS, DEMO_INVOICES } from "@/data/demo";
+import { DEMO_CASES, DEMO_WORKERS, DEMO_INVOICES, DEMO_SPONSOR_LICENCES } from "@/data/demo";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SLATimer } from "@/components/SLATimer";
 import { Link } from "react-router-dom";
 import {
-  AlertTriangle, CheckCircle2, Clock, FileText, Users,
-  TrendingUp, CreditCard, Activity, ArrowRight, Shield, Briefcase,
+  AlertTriangle, Clock, FileText, Users,
+  CreditCard, ArrowRight, Shield, Briefcase, TrendingDown, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-function StatCard({ label, value, sub, icon: Icon, color, trend }: {
-  label: string; value: string | number; sub?: string; icon: React.FC<{ className?: string }>;
-  color?: string; trend?: string;
-}) {
-  return (
-    <div className="card-stat flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", color ?? "bg-primary/10")}>
-          <Icon className={cn("h-4 w-4", color ? "text-white" : "text-primary")} />
-        </div>
-      </div>
-      <div>
-        <div className="text-2xl font-bold">{value}</div>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-        {trend && <p className="text-xs text-secondary mt-0.5">{trend}</p>}
-      </div>
-    </div>
-  );
-}
+import { ScoreGauge, calcLicenceScore, calcWorkerScore, ragBg, ragColor } from "@/components/compliance/ComplianceScore";
+import { Progress } from "@/components/ui/progress";
 
 export default function DashboardPage() {
-  const { currentUser, currentTenant, isInternal } = useApp();
+  const { currentTenant, isInternal } = useApp();
 
   const tenantId = currentTenant?.id;
   const cases = tenantId ? DEMO_CASES.filter(c => c.tenantId === tenantId) : DEMO_CASES;
   const workers = tenantId ? DEMO_WORKERS.filter(w => w.tenantId === tenantId) : DEMO_WORKERS;
   const invoices = tenantId ? DEMO_INVOICES.filter(i => i.tenantId === tenantId) : DEMO_INVOICES;
+  const licence = tenantId ? DEMO_SPONSOR_LICENCES.find(l => l.tenantId === tenantId) : DEMO_SPONSOR_LICENCES[0];
 
-  const openCases = cases.filter(c => !["closed", "cancelled", "filed"].includes(c.status));
+  const today = new Date();
+  const in90 = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
   const overdueCases = cases.filter(c => c.isOverdue);
+  const openCases = cases.filter(c => !["closed", "cancelled", "filed"].includes(c.status));
   const unpaidInvoices = invoices.filter(i => i.status === "unpaid");
   const totalUnpaid = unpaidInvoices.reduce((s, i) => s + i.total, 0);
 
-  // Expiry warnings (next 90 days)
-  const today = new Date();
-  const in90 = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
-  const expiringPassports = workers.filter(w => w.passportExpiry && new Date(w.passportExpiry) < in90 && new Date(w.passportExpiry) > today);
+  // Compliance
+  const activeWorkers = workers.filter(w => w.status === "active");
+  const licenceScore = calcLicenceScore(activeWorkers);
+  const workersAtRisk = activeWorkers.filter(w => (w.complianceScore ?? calcWorkerScore(w)) < 60);
+  const leavers = workers.filter(w => w.leaverStatus === "leaver");
+
   const expiringVisas = workers.filter(w => w.visaExpiry && new Date(w.visaExpiry) < in90 && new Date(w.visaExpiry) > today);
+  const expiringPassports = workers.filter(w => w.passportExpiry && new Date(w.passportExpiry) < in90 && new Date(w.passportExpiry) > today);
+
+  // CoS allocation
+  const cosTotal = licence ? licence.cosDefinedAvailable + licence.cosUndefinedAvailable : 0;
+  const cosRemaining = licence ? cosTotal - licence.cosUsed : 0;
+  const cosUsedPct = cosTotal > 0 ? Math.round((licence!.cosUsed / cosTotal) * 100) : 0;
+
+  // Upcoming reporting deadlines (cases due within 14 days)
+  const reportingDeadlines = cases.filter(c =>
+    c.type === "migrant_reporting" && c.dueDate &&
+    new Date(c.dueDate) < new Date(today.getTime() + 14 * 86400000) &&
+    !["closed", "filed"].includes(c.status)
+  );
 
   const statusGroups = openCases.reduce<Record<string, number>>((acc, c) => {
     acc[c.status] = (acc[c.status] ?? 0) + 1;
@@ -68,12 +67,8 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/reporting">+ New Report</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link to="/sponsorship">+ New CoS Draft</Link>
-          </Button>
+          <Button asChild variant="outline" size="sm"><Link to="/reporting">+ New Report</Link></Button>
+          <Button asChild size="sm"><Link to="/sponsorship">+ New CoS Draft</Link></Button>
         </div>
       </div>
 
@@ -88,12 +83,100 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Stats */}
+      {/* Primary compliance row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Open Cases" value={openCases.length} sub={`${overdueCases.length} overdue`} icon={Briefcase} />
-        <StatCard label="Active Workers" value={workers.filter(w => w.status === "active").length} sub="Sponsored employees" icon={Users} />
-        <StatCard label="Unpaid Invoices" value={`£${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} invoices`} icon={CreditCard} />
-        <StatCard label="Expiries (90 days)" value={expiringVisas.length + expiringPassports.length} sub={`${expiringVisas.length} visas · ${expiringPassports.length} passports`} icon={AlertTriangle} />
+        {/* Licence Health Score */}
+        <div className={cn("rounded-xl border p-4 flex items-center gap-4", ragBg(licenceScore))}>
+          <ScoreGauge score={licenceScore} size={72} />
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Licence Health</p>
+            <p className={cn("text-sm font-bold mt-0.5", ragColor(licenceScore))}>
+              {licenceScore >= 80 ? "Good Standing" : licenceScore >= 60 ? "Action Required" : "High Risk"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{activeWorkers.length} workers scored</p>
+          </div>
+        </div>
+
+        {/* CoS Allocation */}
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">CoS Allocation</p>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {licence ? (
+            <>
+              <div className="text-2xl font-bold">{cosRemaining}<span className="text-sm font-normal text-muted-foreground">/{cosTotal}</span></div>
+              <p className="text-xs text-muted-foreground mb-2">remaining ({licence.cosUsed} used)</p>
+              <Progress value={cosUsedPct} className="h-1.5" />
+              <p className="text-xs text-muted-foreground mt-1">{cosUsedPct}% allocated</p>
+            </>
+          ) : <p className="text-sm text-muted-foreground">No licence data</p>}
+        </div>
+
+        {/* Sponsored Workers */}
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">Sponsored Workers</p>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="text-2xl font-bold">{activeWorkers.length}</div>
+          <p className="text-xs text-muted-foreground mt-0.5">Active sponsored employees</p>
+          <p className="text-xs text-muted-foreground">{leavers.length} leaver{leavers.length !== 1 ? "s" : ""} (last 12mo)</p>
+        </div>
+
+        {/* Workers at Risk */}
+        <div className={cn("rounded-xl border p-4", workersAtRisk.length > 0 ? "border-destructive/30 bg-destructive/5" : "bg-card")}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">Workers at Risk</p>
+            <TrendingDown className={cn("h-4 w-4", workersAtRisk.length > 0 ? "text-destructive" : "text-muted-foreground")} />
+          </div>
+          <div className={cn("text-2xl font-bold", workersAtRisk.length > 0 ? "text-destructive" : "")}>{workersAtRisk.length}</div>
+          <p className="text-xs text-muted-foreground mt-0.5">Compliance score &lt; 60%</p>
+          {workersAtRisk.length > 0 && (
+            <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs text-destructive mt-1">
+              <Link to="/people">View workers →</Link>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Secondary row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">Upcoming Expiries</p>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className={cn("text-2xl font-bold", (expiringVisas.length + expiringPassports.length) > 0 ? "text-warning" : "")}>{expiringVisas.length + expiringPassports.length}</div>
+          <p className="text-xs text-muted-foreground mt-0.5">{expiringVisas.length} visa · {expiringPassports.length} passport (90d)</p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">Reporting Deadlines</p>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className={cn("text-2xl font-bold", reportingDeadlines.length > 0 ? "text-warning" : "")}>{reportingDeadlines.length}</div>
+          <p className="text-xs text-muted-foreground mt-0.5">Due within 14 days</p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">Leavers (12 months)</p>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="text-2xl font-bold">{leavers.length}</div>
+          <p className="text-xs text-muted-foreground mt-0.5">In retention period</p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">Open Cases</p>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="text-2xl font-bold">{openCases.length}</div>
+          <p className={cn("text-xs mt-0.5", overdueCases.length > 0 ? "text-destructive font-medium" : "text-muted-foreground")}>{overdueCases.length} overdue</p>
+        </div>
       </div>
 
       {/* Main grid */}
@@ -101,8 +184,10 @@ export default function DashboardPage() {
         {/* Cases by status */}
         <div className="lg:col-span-2 rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">Cases by Status</h2>
-            <Button variant="ghost" size="sm" asChild><Link to="/sponsorship" className="flex items-center gap-1 text-xs">View all <ArrowRight className="h-3 w-3" /></Link></Button>
+            <h2 className="font-semibold">Active Cases</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/sponsorship" className="flex items-center gap-1 text-xs">View all <ArrowRight className="h-3 w-3" /></Link>
+            </Button>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5">
             {Object.entries(statusGroups).map(([status, count]) => (
@@ -131,7 +216,7 @@ export default function DashboardPage() {
 
         {/* Right column */}
         <div className="space-y-4">
-          {/* Worker expiries */}
+          {/* Upcoming expiries */}
           <div className="rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-sm">Upcoming Expiries</h2>
@@ -158,30 +243,33 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Unpaid invoices */}
+          {/* Invoices (secondary) */}
           <div className="rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-sm">Unpaid Invoices</h2>
               <Button variant="ghost" size="sm" asChild><Link to="/billing" className="text-xs">View all</Link></Button>
             </div>
-            {unpaidInvoices.slice(0, 3).map(inv => (
-              <div key={inv.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div>
-                  <p className="text-sm font-medium">{inv.invoiceNumber}</p>
-                  <p className="text-xs text-muted-foreground">Due {new Date(inv.dueDate).toLocaleDateString("en-GB")}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-destructive">£{inv.total.toLocaleString()}</p>
-                  <StatusBadge status={inv.status} />
-                </div>
-              </div>
-            ))}
-            {unpaidInvoices.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">All invoices paid ✓</p>}
+            {unpaidInvoices.length === 0
+              ? <p className="text-sm text-muted-foreground text-center py-3">All invoices paid ✓</p>
+              : <>
+                  <div className="text-lg font-bold text-destructive mb-1">£{totalUnpaid.toLocaleString()}</div>
+                  <p className="text-xs text-muted-foreground mb-3">{unpaidInvoices.length} outstanding invoice{unpaidInvoices.length !== 1 ? "s" : ""}</p>
+                  {unpaidInvoices.slice(0, 2).map(inv => (
+                    <div key={inv.id} className="flex items-center justify-between py-1.5 border-b last:border-0">
+                      <div>
+                        <p className="text-xs font-medium">{inv.invoiceNumber}</p>
+                        <p className="text-xs text-muted-foreground">Due {new Date(inv.dueDate).toLocaleDateString("en-GB")}</p>
+                      </div>
+                      <p className="text-xs font-bold text-destructive">£{inv.total.toLocaleString()}</p>
+                    </div>
+                  ))}
+                </>
+            }
           </div>
         </div>
       </div>
 
-      {/* Internal: cross-tenant view */}
+      {/* Internal: cross-tenant */}
       {isInternal && (
         <div className="rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
           <h2 className="font-semibold mb-4">Caseworker Workload</h2>

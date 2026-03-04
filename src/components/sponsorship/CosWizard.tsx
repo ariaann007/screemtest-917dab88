@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, ChevronRight, ChevronLeft, FileText, User, Briefcase, PoundSterling, BookOpen, Upload } from "lucide-react";
-import { DEMO_COUNTRIES, DEMO_SOC_CODES, DEMO_WORK_LOCATIONS } from "@/data/demo";
+import { CheckCircle2, ChevronRight, ChevronLeft, FileText, User, Briefcase, PoundSterling, BookOpen, Upload, AlertTriangle } from "lucide-react";
+import { DEMO_COUNTRIES, DEMO_SOC_CODES, DEMO_WORK_LOCATIONS, DEMO_SOC_GOING_RATES } from "@/data/demo";
+import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -35,9 +36,11 @@ interface CosWizardProps {
 }
 
 export default function CosWizard({ onComplete }: CosWizardProps) {
+  const { currentUser } = useApp();
   const [step, setStep] = useState(0);
   const [path, setPath] = useState<"client" | "assisted" | null>(null);
   const [saved, setSaved] = useState(false);
+  const [salaryOverride, setSalaryOverride] = useState(false);
 
   const [form, setForm] = useState({
     route: "", category: "",
@@ -329,6 +332,17 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
   }
 
   if (step === 4) {
+    // Salary going-rate check
+    const goingRate = DEMO_SOC_GOING_RATES.find(r => r.socCode === form.socCode);
+    const grossNum = parseFloat(form.grossSalary) || 0;
+    const annualSalary = form.salaryPeriod === "year" ? grossNum :
+      form.salaryPeriod === "month" ? grossNum * 12 :
+      form.salaryPeriod === "week" ? grossNum * 52 :
+      form.salaryPeriod === "hour" ? grossNum * (parseFloat(form.weeklyHours) || 37.5) * 52 : grossNum;
+    const belowGoingRate = goingRate && annualSalary > 0 && annualSalary < goingRate.minAnnualSalary;
+    const isManager = currentUser?.role === "denizns_manager" || currentUser?.role === "super_admin";
+    const salaryOk = !belowGoingRate || (isManager && salaryOverride);
+
     return (
       <div className="max-w-2xl">
         <h1 className="text-xl font-bold mb-1">Salary & Role Requirements</h1>
@@ -343,6 +357,35 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
               </Select>
             </div>
           </div>
+
+          {/* Going rate feedback */}
+          {goingRate && annualSalary > 0 && (
+            <div className={cn("rounded-lg p-3 text-sm flex items-start gap-2",
+              belowGoingRate ? "bg-destructive/10 border border-destructive/30 text-destructive" : "bg-success/10 border border-success/30 text-success"
+            )}>
+              {belowGoingRate ? <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> : <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />}
+              <div>
+                <p className="font-medium">
+                  {belowGoingRate
+                    ? `Salary below SOC going rate — £${goingRate.minAnnualSalary.toLocaleString()}/yr required for ${goingRate.title} (${form.socCode})`
+                    : `Salary meets SOC going rate for ${goingRate.title} (${form.socCode})`
+                  }
+                </p>
+                {belowGoingRate && annualSalary > 0 && (
+                  <p className="text-xs mt-0.5">Entered: £{Math.round(annualSalary).toLocaleString()}/yr · Shortfall: £{(goingRate.minAnnualSalary - Math.round(annualSalary)).toLocaleString()}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Manager override */}
+          {belowGoingRate && isManager && (
+            <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
+              <input type="checkbox" id="override" checked={salaryOverride} onChange={e => setSalaryOverride(e.target.checked)} className="rounded" />
+              <label htmlFor="override" className="cursor-pointer font-medium">Manager override: proceed despite below going rate (will be recorded in audit log)</label>
+            </div>
+          )}
+
           <div><Label>Registration Details Required (optional)</Label><Input value={form.registrationDetails} onChange={e => update("registrationDetails", e.target.value)} className="mt-1" placeholder="e.g. NMC pin" /></div>
           <div>
             <Label>Worker requires ETA certificate?</Label>
@@ -352,7 +395,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
             </Select>
           </div>
         </div>
-        <NavButtons canNext={!!form.grossSalary} />
+        <NavButtons canNext={!!(form.grossSalary && salaryOk)} />
       </div>
     );
   }

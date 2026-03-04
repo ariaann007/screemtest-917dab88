@@ -1,4 +1,4 @@
-import { Tenant, User, Worker, Case, Invoice, AuditLog, SOCCode, Country, WorkLocation, Notification, Document } from "@/types";
+import { Tenant, User, Worker, Case, Invoice, AuditLog, SOCCode, Country, WorkLocation, Notification, SponsorLicence, VisaRule, SocGoingRate } from "@/types";
 
 // Demo Tenants
 export const DEMO_TENANTS: Tenant[] = [
@@ -191,7 +191,11 @@ export const DEMO_WORKERS: Worker[] = [
     niNumber: "CD234567E", passportNumber: "B23456789", passportExpiry: "2024-06-15",
     visaType: "Skilled Worker", cosReference: "C234567890B", visaExpiry: "2024-06-14",
     jobTitle: "Registered Nurse", socCode: "2231", salary: 35000, salaryPeriod: "year",
-    workLocationId: "wl1", startDate: "2022-06-15", weeklyHours: 37.5, status: "active", createdAt: "2022-06-10T09:00:00Z",
+    workLocationId: "wl1", startDate: "2022-06-15", weeklyHours: 37.5, status: "inactive", createdAt: "2022-06-10T09:00:00Z",
+    leaverStatus: "leaver", retentionExpiryDate: "2025-01-14",
+    leaverChecklist: { reportingSubmitted: true, finalPayslipUploaded: true, finalAttendanceUploaded: false, lastContactDetailsStored: false },
+    complianceScore: 48,
+    absenceRecords: [{ id: "ab1", startDate: "2024-01-02", endDate: "2024-01-19", reason: "Unauthorised absence", workingDays: 14 }],
   },
   {
     id: "w3", tenantId: "t1", familyName: "Mensah", givenName: "Kwame", nationality: "Ghanaian",
@@ -231,7 +235,10 @@ export const DEMO_WORKERS: Worker[] = [
     passportNumber: "G78901234", passportExpiry: "2024-08-30",
     visaType: "Skilled Worker", cosReference: "C789012345G", visaExpiry: "2024-08-29",
     jobTitle: "Care Worker", socCode: "6143", salary: 23000, salaryPeriod: "year",
-    workLocationId: "wl1", startDate: "2022-09-01", weeklyHours: 37.5, status: "active", createdAt: "2022-08-25T09:00:00Z",
+    workLocationId: "wl1", startDate: "2022-09-01", weeklyHours: 37.5, status: "inactive", createdAt: "2022-08-25T09:00:00Z",
+    leaverStatus: "leaver", retentionExpiryDate: "2025-08-29",
+    leaverChecklist: { reportingSubmitted: true, finalPayslipUploaded: false, finalAttendanceUploaded: false, lastContactDetailsStored: false },
+    complianceScore: 35,
   },
   {
     id: "w8", tenantId: "t1", familyName: "Banda", givenName: "Moses", nationality: "Kenyan",
@@ -469,3 +476,56 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
 
 export const CURRENT_USER = DEMO_USERS[0]; // Default to client AO for demo
 export const CURRENT_TENANT = DEMO_TENANTS[0];
+
+// Sponsor Licences
+export const DEMO_SPONSOR_LICENCES: SponsorLicence[] = [
+  {
+    id: "sl1", tenantId: "t1", licenceNumber: "SUN-2021-0045",
+    type: "A-rated", rating: "A",
+    issueDate: "2021-06-15", expiryDate: "2025-06-14",
+    renewalDate: "2025-03-14",
+    cosDefinedAvailable: 25, cosUndefinedAvailable: 10, cosUsed: 13,
+  },
+  {
+    id: "sl2", tenantId: "t2", licenceNumber: "CFG-2020-0123",
+    type: "A-rated", rating: "A",
+    issueDate: "2020-09-01", expiryDate: "2024-08-31",
+    renewalDate: "2024-05-31",
+    cosDefinedAvailable: 30, cosUndefinedAvailable: 5, cosUsed: 10,
+  },
+];
+
+// Visa Rules
+export const DEMO_VISA_RULES: VisaRule[] = [
+  {
+    visaType: "Student", maxHoursPerWeek: 40, termMaxHours: 20,
+    requiresTermDates: true, allowsSupplementaryWork: true,
+    requiresSecondaryEmploymentLetter: false,
+  },
+  {
+    visaType: "Graduate", maxHoursPerWeek: 40,
+    requiresTermDates: false, allowsSupplementaryWork: true,
+    requiresSecondaryEmploymentLetter: false,
+  },
+  {
+    visaType: "Skilled Worker", maxHoursPerWeek: 48,
+    requiresTermDates: false, allowsSupplementaryWork: true,
+    requiresSecondaryEmploymentLetter: true,
+  },
+];
+
+// SOC Going Rates
+export const DEMO_SOC_GOING_RATES: SocGoingRate[] = [
+  { socCode: "2231", title: "Nursing professionals", minAnnualSalary: 35392, minHourlySalary: 18.15 },
+  { socCode: "2232", title: "Midwifery professionals", minAnnualSalary: 35392, minHourlySalary: 18.15 },
+  { socCode: "2233", title: "Nurse practitioners", minAnnualSalary: 35392, minHourlySalary: 18.15 },
+  { socCode: "2217", title: "Occupational therapists", minAnnualSalary: 37338, minHourlySalary: 19.15 },
+  { socCode: "2218", title: "Physiotherapists", minAnnualSalary: 37338, minHourlySalary: 19.15 },
+  { socCode: "2411", title: "Social workers", minAnnualSalary: 37000, minHourlySalary: 18.97 },
+  { socCode: "6141", title: "Nursing auxiliaries and assistants", minAnnualSalary: 23200, minHourlySalary: 11.90 },
+  { socCode: "6143", title: "Care workers and home carers", minAnnualSalary: 23200, minHourlySalary: 11.90 },
+  { socCode: "6146", title: "Senior care workers", minAnnualSalary: 26200, minHourlySalary: 13.44 },
+  { socCode: "6148", title: "Activities coordinators (care homes)", minAnnualSalary: 24000, minHourlySalary: 12.31 },
+  { socCode: "1241", title: "Health services managers", minAnnualSalary: 41500, minHourlySalary: 21.28 },
+];
+
