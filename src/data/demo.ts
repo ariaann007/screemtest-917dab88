@@ -344,6 +344,56 @@ export const DEMO_WORKERS: Worker[] = [
     jobTitle: "Senior Care Worker", socCode: "6146", salary: 28500, salaryPeriod: "year",
     workLocationId: "wl3", startDate: "2024-05-09", weeklyHours: 37.5, status: "active", createdAt: "2024-05-04T09:00:00Z",
   },
+  // Non-sponsored workers (British / settled status / EU pre-settled)
+  {
+    id: "w21", tenantId: "t1", familyName: "Clarke", givenName: "Emma", nationality: "British",
+    dateOfBirth: "1991-03-12", email: "emma.c@sunrisecare.co.uk", phone: "07800200001",
+    niNumber: "JA223344B",
+    jobTitle: "Care Worker", socCode: "6143", salary: 22800, salaryPeriod: "year",
+    workLocationId: "wl1", startDate: "2023-06-01", weeklyHours: 37.5, status: "active", createdAt: "2023-05-25T09:00:00Z",
+    complianceScore: 88,
+  },
+  {
+    id: "w22", tenantId: "t1", familyName: "Patel", givenName: "Ravi", nationality: "British",
+    dateOfBirth: "1985-07-19", email: "ravi.p@sunrisecare.co.uk", phone: "07800200002",
+    niNumber: "JB334455C",
+    jobTitle: "Senior Care Worker", socCode: "6146", salary: 27000, salaryPeriod: "year",
+    workLocationId: "wl1", startDate: "2022-01-10", weeklyHours: 40, status: "active", createdAt: "2022-01-05T09:00:00Z",
+    complianceScore: 92,
+  },
+  {
+    id: "w23", tenantId: "t1", familyName: "Murphy", givenName: "Sean", nationality: "Irish",
+    dateOfBirth: "1988-11-04", email: "sean.m@sunrisecare.co.uk",
+    niNumber: "JC445566D",
+    jobTitle: "Activities Coordinator", socCode: "6148", salary: 24500, salaryPeriod: "year",
+    workLocationId: "wl2", startDate: "2023-03-01", weeklyHours: 35, status: "active", createdAt: "2023-02-24T09:00:00Z",
+    complianceScore: 79,
+  },
+  {
+    id: "w24", tenantId: "t1", familyName: "Kowalczyk", givenName: "Marta", nationality: "Polish",
+    dateOfBirth: "1993-09-28", email: "marta.k@sunrisecare.co.uk",
+    niNumber: "JD556677E",
+    visaType: "EU Settled Status",
+    jobTitle: "Nursing Auxiliary", socCode: "6141", salary: 22000, salaryPeriod: "year",
+    workLocationId: "wl1", startDate: "2021-11-15", weeklyHours: 37.5, status: "active", createdAt: "2021-11-10T09:00:00Z",
+    complianceScore: 85,
+  },
+  {
+    id: "w25", tenantId: "t2", familyName: "Wilson", givenName: "David", nationality: "British",
+    dateOfBirth: "1979-02-14", email: "david.w@carefirst.co.uk",
+    niNumber: "JE667788F",
+    jobTitle: "Registered Nurse", socCode: "2231", salary: 36000, salaryPeriod: "year",
+    workLocationId: "wl3", startDate: "2020-08-01", weeklyHours: 37.5, status: "active", createdAt: "2020-07-25T09:00:00Z",
+    complianceScore: 95,
+  },
+  {
+    id: "w26", tenantId: "t2", familyName: "Jones", givenName: "Hannah", nationality: "British",
+    dateOfBirth: "1996-05-22", email: "hannah.j@carefirst.co.uk",
+    niNumber: "JF778899G",
+    jobTitle: "Care Worker", socCode: "6143", salary: 22500, salaryPeriod: "year",
+    workLocationId: "wl3", startDate: "2024-02-01", weeklyHours: 30, status: "active", createdAt: "2024-01-26T09:00:00Z",
+    complianceScore: 72,
+  },
 ];
 
 // Demo Cases
