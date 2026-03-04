@@ -1,8 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Award, FileText, Users, InboxIcon,
-  CreditCard, Settings, ShieldCheck, ChevronRight, Building2,
-  ChevronDown,
+  Settings, ShieldCheck, Building2, UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
@@ -12,8 +11,8 @@ const clientNav = [
   { label: "Sponsorship", href: "/sponsorship", icon: Award },
   { label: "Reporting", href: "/reporting", icon: FileText },
   { label: "People", href: "/people", icon: Users },
+  { label: "Recruitment", href: "/recruitment", icon: UserPlus },
   { label: "Requests", href: "/requests", icon: InboxIcon },
-  { label: "Billing", href: "/billing", icon: CreditCard },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -22,8 +21,8 @@ const internalNav = [
   { label: "Sponsorship", href: "/sponsorship", icon: Award },
   { label: "Reporting", href: "/reporting", icon: FileText },
   { label: "People", href: "/people", icon: Users },
+  { label: "Recruitment", href: "/recruitment", icon: UserPlus },
   { label: "Requests", href: "/requests", icon: InboxIcon },
-  { label: "Billing", href: "/billing", icon: CreditCard },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Admin", href: "/admin", icon: ShieldCheck },
 ];
