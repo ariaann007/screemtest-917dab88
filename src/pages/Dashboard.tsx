@@ -4,8 +4,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { SLATimer } from "@/components/SLATimer";
 import { Link } from "react-router-dom";
 import {
-  AlertTriangle, Clock, FileText, Users,
-  CreditCard, ArrowRight, Shield, Briefcase, TrendingDown, Calendar,
+  AlertTriangle, Clock, ArrowRight, Shield, Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -83,8 +82,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Primary compliance row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top stats row */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Licence Health Score */}
         <div className={cn("rounded-xl border p-4 flex items-center gap-4", ragBg(licenceScore))}>
           <ScoreGauge score={licenceScore} size={72} />
@@ -113,62 +112,7 @@ export default function DashboardPage() {
           ) : <p className="text-sm text-muted-foreground">No licence data</p>}
         </div>
 
-        {/* Sponsored Workers */}
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground font-medium">Sponsored Workers</p>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-bold">{activeWorkers.length}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">Active sponsored employees</p>
-          <p className="text-xs text-muted-foreground">{leavers.length} leaver{leavers.length !== 1 ? "s" : ""} (last 12mo)</p>
-        </div>
-
-        {/* Workers at Risk */}
-        <div className={cn("rounded-xl border p-4", workersAtRisk.length > 0 ? "border-destructive/30 bg-destructive/5" : "bg-card")}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground font-medium">Workers at Risk</p>
-            <TrendingDown className={cn("h-4 w-4", workersAtRisk.length > 0 ? "text-destructive" : "text-muted-foreground")} />
-          </div>
-          <div className={cn("text-2xl font-bold", workersAtRisk.length > 0 ? "text-destructive" : "")}>{workersAtRisk.length}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">Compliance score &lt; 60%</p>
-          {workersAtRisk.length > 0 && (
-            <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs text-destructive mt-1">
-              <Link to="/people">View workers →</Link>
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Secondary row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground font-medium">Upcoming Expiries</p>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className={cn("text-2xl font-bold", (expiringVisas.length + expiringPassports.length) > 0 ? "text-warning" : "")}>{expiringVisas.length + expiringPassports.length}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">{expiringVisas.length} visa · {expiringPassports.length} passport (90d)</p>
-        </div>
-
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground font-medium">Reporting Deadlines</p>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className={cn("text-2xl font-bold", reportingDeadlines.length > 0 ? "text-warning" : "")}>{reportingDeadlines.length}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">Due within 14 days</p>
-        </div>
-
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground font-medium">Leavers (12 months)</p>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="text-2xl font-bold">{leavers.length}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">In retention period</p>
-        </div>
-
+        {/* Open Cases */}
         <div className="rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground font-medium">Open Cases</p>
