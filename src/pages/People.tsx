@@ -347,13 +347,20 @@ export default function PeoplePage() {
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [showAddWorker, setShowAddWorker] = useState(false);
   const [extraWorkers, setExtraWorkers] = useState<Worker[]>([]);
+  const [sponsorTab, setSponsorTab] = useState<"all" | "sponsored" | "non_sponsored">("all");
 
   const baseWorkers = DEMO_WORKERS.filter(w => currentTenant ? w.tenantId === currentTenant.id : true);
   const workers = [...baseWorkers, ...extraWorkers.filter(w => currentTenant ? w.tenantId === currentTenant.id : true)];
   const today = new Date();
   const in90 = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-  const filtered = workers.filter(w => {
+  const isSponsored = (w: Worker) => !!w.cosReference;
+
+  const tabWorkers = sponsorTab === "all" ? workers
+    : sponsorTab === "sponsored" ? workers.filter(isSponsored)
+    : workers.filter(w => !isSponsored(w));
+
+  const filtered = tabWorkers.filter(w => {
     const name = `${w.givenName} ${w.familyName}`.toLowerCase();
     const matchSearch = !search || name.includes(search.toLowerCase()) || w.jobTitle?.toLowerCase().includes(search.toLowerCase());
     const visaExpiring = w.visaExpiry && new Date(w.visaExpiry) < in90;
@@ -378,6 +385,8 @@ export default function PeoplePage() {
 
   const leaverCount = workers.filter(w => w.leaverStatus === "leaver").length;
   const atRiskCount = workers.filter(w => (w.complianceScore ?? calcWorkerScore(w)) < 60).length;
+  const sponsoredCount = workers.filter(isSponsored).length;
+  const nonSponsoredCount = workers.filter(w => !isSponsored(w)).length;
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -387,9 +396,51 @@ export default function PeoplePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">People</h1>
-          <p className="text-sm text-muted-foreground">Sponsored workers and compliance files</p>
+          <p className="text-sm text-muted-foreground">Sponsored and non-sponsored workers</p>
         </div>
         <Button size="sm" onClick={() => setShowAddWorker(true)}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total Workers", value: workers.length, color: "text-foreground", tab: "all" as const },
+          { label: "Sponsored", value: sponsoredCount, color: "text-primary", tab: "sponsored" as const },
+          { label: "Non-Sponsored", value: nonSponsoredCount, color: "text-success", tab: "non_sponsored" as const },
+          { label: "Leavers", value: leaverCount, color: "text-muted-foreground", tab: "all" as const },
+        ].map(s => (
+          <button
+            key={s.label}
+            onClick={() => setSponsorTab(s.tab)}
+            className={cn(
+              "rounded-xl border bg-card p-4 text-left transition-all hover:shadow-sm",
+              sponsorTab === s.tab && s.tab !== "all" && "ring-2 ring-primary"
+            )}
+          >
+            <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Sponsor type tabs */}
+      <div className="flex gap-0 border-b">
+        {([
+          { id: "all", label: `All Workers (${workers.length})` },
+          { id: "sponsored", label: `Sponsored (${sponsoredCount})` },
+          { id: "non_sponsored", label: `Non-Sponsored (${nonSponsoredCount})` },
+        ] as const).map(t => (
+          <button
+            key={t.id}
+            onClick={() => setSponsorTab(t.id)}
+            className={cn(
+              "px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+              sponsorTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Banners */}
@@ -436,8 +487,8 @@ export default function PeoplePage() {
             <tr className="border-b bg-muted/30">
               <th className="text-left p-3 font-medium text-muted-foreground">Worker</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Job Title / SOC</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">CoS Reference</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Visa Expiry</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Type</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">CoS / Visa Info</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Score</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
               <th className="p-3"></th>
@@ -449,13 +500,14 @@ export default function PeoplePage() {
               const visaExpiry = w.visaExpiry ? new Date(w.visaExpiry) : null;
               const daysVisa = visaExpiry ? Math.ceil((visaExpiry.getTime() - today.getTime()) / 86400000) : null;
               const isLeaver = w.leaverStatus === "leaver";
+              const sponsored = isSponsored(w);
               return (
                 <tr key={w.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedWorker(w)}>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "h-7 w-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
-                        isLeaver ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                        isLeaver ? "bg-muted text-muted-foreground" : sponsored ? "bg-primary/10 text-primary" : "bg-success/10 text-success"
                       )}>
                         {w.givenName[0]}{w.familyName[0]}
                       </div>
@@ -470,14 +522,28 @@ export default function PeoplePage() {
                     </div>
                   </td>
                   <td className="p-3"><p className="font-medium">{w.jobTitle || "—"}</p><p className="text-xs text-muted-foreground">{w.socCode}</p></td>
-                  <td className="p-3 font-mono text-xs">{w.cosReference || "—"}</td>
                   <td className="p-3">
-                    {visaExpiry ? (
-                      <span className={cn("text-sm", daysVisa !== null && daysVisa < 30 ? "text-destructive font-medium" : daysVisa !== null && daysVisa < 90 ? "text-warning" : "")}>
-                        {visaExpiry.toLocaleDateString("en-GB")}
-                        {daysVisa !== null && daysVisa < 90 && <span className="ml-1 text-xs">({daysVisa}d)</span>}
-                      </span>
-                    ) : "—"}
+                    <span className={cn(
+                      "text-xs font-semibold px-2 py-0.5 rounded-full border",
+                      sponsored ? "bg-primary/10 text-primary border-primary/20" : "bg-success/10 text-success border-success/20"
+                    )}>
+                      {sponsored ? "Sponsored" : "Non-Sponsored"}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    {sponsored ? (
+                      <div>
+                        <p className="font-mono text-xs">{w.cosReference}</p>
+                        {visaExpiry && (
+                          <span className={cn("text-xs", daysVisa !== null && daysVisa < 30 ? "text-destructive font-medium" : daysVisa !== null && daysVisa < 90 ? "text-warning" : "text-muted-foreground")}>
+                            {visaExpiry.toLocaleDateString("en-GB")}
+                            {daysVisa !== null && daysVisa < 90 && <span className="ml-1">({daysVisa}d)</span>}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{w.visaType || "British / Settled"}</span>
+                    )}
                   </td>
                   <td className="p-3"><WorkerScoreBadge worker={w} /></td>
                   <td className="p-3"><StatusBadge status={w.status} /></td>
@@ -487,8 +553,13 @@ export default function PeoplePage() {
             })}
           </tbody>
         </table>
-        <div className="p-3 border-t bg-muted/20 text-xs text-muted-foreground">{filtered.length} of {workers.length} workers</div>
+        <div className="p-3 border-t bg-muted/20 text-xs text-muted-foreground">
+          {filtered.length} of {workers.length} workers · {sponsoredCount} sponsored · {nonSponsoredCount} non-sponsored
+        </div>
       </div>
     </div>
   );
 }
+
+
+
