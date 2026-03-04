@@ -22,10 +22,21 @@ type NewWorkerForm = {
   givenName: string; familyName: string; nationality: string;
   dateOfBirth: string; email: string; phone: string; niNumber: string;
   passportNumber: string; passportExpiry: string;
-  visaType: string; cosReference: string; visaExpiry: string;
+  visaType: string; otherVisaType: string; cosReference: string; visaExpiry: string;
   jobTitle: string; socCode: string; salary: string; salaryPeriod: string;
   workLocationId: string; startDate: string; weeklyHours: string;
 };
+
+const VISA_TYPES = [
+  "Skilled Worker",
+  "Student",
+  "Graduate",
+  "Global Talent",
+  "Dependent",
+  "ILR (Indefinite Leave to Remain)",
+  "Specialist Worker",
+  "Other",
+];
 
 function AddWorkerModal({ onClose, onAdd }: { onClose: () => void; onAdd: (w: Worker) => void }) {
   const { currentTenant } = useApp();
@@ -33,13 +44,15 @@ function AddWorkerModal({ onClose, onAdd }: { onClose: () => void; onAdd: (w: Wo
   const [form, setForm] = useState<NewWorkerForm>({
     givenName: "", familyName: "", nationality: "", dateOfBirth: "",
     email: "", phone: "", niNumber: "", passportNumber: "", passportExpiry: "",
-    visaType: "Skilled Worker", cosReference: "", visaExpiry: "",
+    visaType: "Skilled Worker", otherVisaType: "", cosReference: "", visaExpiry: "",
     jobTitle: "", socCode: "", salary: "", salaryPeriod: "year",
     workLocationId: "", startDate: "", weeklyHours: "37.5",
   });
 
   const set = (k: keyof NewWorkerForm, v: string) => setForm(p => ({ ...p, [k]: v }));
   const canSave = !!(form.givenName && form.familyName && form.nationality && form.dateOfBirth);
+
+  const resolvedVisaType = form.visaType === "Other" ? (form.otherVisaType || "Other") : form.visaType;
 
   const handleSave = () => {
     const newWorker: Worker = {
@@ -50,7 +63,7 @@ function AddWorkerModal({ onClose, onAdd }: { onClose: () => void; onAdd: (w: Wo
       email: form.email || undefined, phone: form.phone || undefined,
       niNumber: form.niNumber || undefined, passportNumber: form.passportNumber || undefined,
       passportExpiry: form.passportExpiry || undefined,
-      visaType: form.visaType || undefined, cosReference: form.cosReference || undefined,
+      visaType: resolvedVisaType || undefined, cosReference: form.cosReference || undefined,
       visaExpiry: form.visaExpiry || undefined,
       jobTitle: form.jobTitle || undefined, socCode: form.socCode || undefined,
       salary: form.salary ? parseFloat(form.salary) : undefined, salaryPeriod: form.salaryPeriod,
@@ -64,7 +77,6 @@ function AddWorkerModal({ onClose, onAdd }: { onClose: () => void; onAdd: (w: Wo
   };
 
   const countries = DEMO_COUNTRIES.map(c => c.name);
-  const visaTypes = ["Skilled Worker", "Student", "Graduate", "Global Business Mobility", "Specialist Worker"];
   const socs = DEMO_SOC_CODES;
   const locations = DEMO_WORK_LOCATIONS.filter(l => l.tenantId === (currentTenant?.id ?? "t1"));
 
@@ -119,8 +131,22 @@ function AddWorkerModal({ onClose, onAdd }: { onClose: () => void; onAdd: (w: Wo
                 <Label>Visa Type</Label>
                 <Select value={form.visaType} onValueChange={v => set("visaType", v)}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{visaTypes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>{VISA_TYPES.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
+                {form.visaType === "Other" && (
+                  <Input
+                    className="mt-2"
+                    placeholder="Please specify visa category…"
+                    value={form.otherVisaType}
+                    onChange={e => set("otherVisaType", e.target.value)}
+                  />
+                )}
+                {form.visaType === "Student" && (
+                  <p className="text-xs text-warning mt-1.5 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    Student visa — maximum 20 hrs/week (including work for another sponsor)
+                  </p>
+                )}
               </div>
               <div><Label>CoS Reference</Label><Input value={form.cosReference} onChange={e => set("cosReference", e.target.value)} className="mt-1" placeholder="e.g. C123456789A" /></div>
               <div><Label>Visa Expiry</Label><Input type="date" value={form.visaExpiry} onChange={e => set("visaExpiry", e.target.value)} className="mt-1" /></div>

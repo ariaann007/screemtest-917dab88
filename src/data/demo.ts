@@ -498,7 +498,8 @@ export const DEMO_SPONSOR_LICENCES: SponsorLicence[] = [
 // Visa Rules
 export const DEMO_VISA_RULES: VisaRule[] = [
   {
-    visaType: "Student", maxHoursPerWeek: 40, termMaxHours: 20,
+    // Student visa: max 20h/week during term; sponsored-by-another also capped at 20h
+    visaType: "Student", maxHoursPerWeek: 20, termMaxHours: 20,
     requiresTermDates: true, allowsSupplementaryWork: true,
     requiresSecondaryEmploymentLetter: false,
   },
@@ -509,6 +510,26 @@ export const DEMO_VISA_RULES: VisaRule[] = [
   },
   {
     visaType: "Skilled Worker", maxHoursPerWeek: 48,
+    requiresTermDates: false, allowsSupplementaryWork: true,
+    requiresSecondaryEmploymentLetter: true,
+  },
+  {
+    visaType: "Global Talent", maxHoursPerWeek: 48,
+    requiresTermDates: false, allowsSupplementaryWork: true,
+    requiresSecondaryEmploymentLetter: false,
+  },
+  {
+    visaType: "Dependent", maxHoursPerWeek: 48,
+    requiresTermDates: false, allowsSupplementaryWork: false,
+    requiresSecondaryEmploymentLetter: false,
+  },
+  {
+    visaType: "ILR (Indefinite Leave to Remain)", maxHoursPerWeek: 48,
+    requiresTermDates: false, allowsSupplementaryWork: false,
+    requiresSecondaryEmploymentLetter: false,
+  },
+  {
+    visaType: "Specialist Worker", maxHoursPerWeek: 48,
     requiresTermDates: false, allowsSupplementaryWork: true,
     requiresSecondaryEmploymentLetter: true,
   },
