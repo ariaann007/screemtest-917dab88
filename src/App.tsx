@@ -10,7 +10,7 @@ import SponsorshipPage from "@/pages/Sponsorship";
 import ReportingPage from "@/pages/Reporting";
 import PeoplePage from "@/pages/People";
 import RequestsPage from "@/pages/Requests";
-import BillingPage from "@/pages/Billing";
+import RecruitmentPage from "@/pages/Recruitment";
 import SettingsPage from "@/pages/Settings";
 import AdminPage from "@/pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -31,7 +31,7 @@ const App = () => (
               <Route path="/reporting" element={<ReportingPage />} />
               <Route path="/people" element={<PeoplePage />} />
               <Route path="/requests" element={<RequestsPage />} />
-              <Route path="/billing" element={<BillingPage />} />
+              <Route path="/recruitment" element={<RecruitmentPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
