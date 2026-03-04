@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   Plus, X, Briefcase, MapPin, Clock, Users, ChevronRight,
-  CheckCircle2, Eye, FileText, ArrowLeft, Search,
+  CheckCircle2, FileText, ArrowLeft, Search, Upload, MessageSquare,
+  XCircle, Paperclip,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -42,9 +42,12 @@ interface Application {
   rightToWork: string;
   coverLetter: string;
   cvFileName?: string;
+  cvFileSize?: number;
   linkedIn?: string;
   status: ApplicationStatus;
   submittedAt: string;
+  interviewNotes?: string;
+  rejectionReason?: string;
 }
 
 // ── Demo Data ──────────────────────────────────────────────────────────────────
@@ -82,6 +85,12 @@ const APP_STATUS_COLORS: Record<ApplicationStatus, string> = {
   offered: "bg-success/10 text-success border-success/20",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
 };
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 // ── Add Vacancy Modal ──────────────────────────────────────────────────────────
 function AddVacancyModal({ onClose, onAdd }: { onClose: () => void; onAdd: (v: Vacancy) => void }) {
@@ -174,8 +183,21 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
     givenName: "", familyName: "", email: "", phone: "", nationality: "",
     rightToWork: "", coverLetter: "", linkedIn: "",
   });
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const set = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }));
   const canSave = !!(form.givenName && form.familyName && form.email && form.rightToWork);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const allowed = ["application/pdf", "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+      if (allowed.includes(file.type) || file.name.match(/\.(pdf|doc|docx)$/i)) {
+        setCvFile(file);
+      }
+    }
+  };
 
   const handleSubmit = () => {
     onSubmit({
@@ -185,6 +207,8 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
       email: form.email, phone: form.phone, nationality: form.nationality,
       rightToWork: form.rightToWork, coverLetter: form.coverLetter,
       linkedIn: form.linkedIn || undefined,
+      cvFileName: cvFile?.name,
+      cvFileSize: cvFile?.size,
       status: "new", submittedAt: new Date().toISOString(),
     });
     setSaved(true);
@@ -229,12 +253,41 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
             <div className="space-y-3">
               <div><Label>Cover Letter / Supporting Statement</Label><Textarea className="mt-1 min-h-[120px]" value={form.coverLetter} onChange={e => set("coverLetter", e.target.value)} placeholder="Tell us why you're a great fit for this role…" /></div>
               <div><Label>LinkedIn Profile URL</Label><Input className="mt-1" value={form.linkedIn} onChange={e => set("linkedIn", e.target.value)} placeholder="https://linkedin.com/in/…" /></div>
+
+              {/* CV Upload */}
               <div>
                 <Label>CV / Resume</Label>
-                <div className="mt-1 flex items-center gap-2 border border-dashed rounded-lg p-3 text-sm text-muted-foreground cursor-pointer hover:bg-muted/30 transition-colors">
-                  <FileText className="h-4 w-4 shrink-0" />
-                  <span>Click to upload CV (PDF, DOCX) — coming soon</span>
-                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                {cvFile ? (
+                  <div className="mt-1 flex items-center gap-2 border rounded-lg p-3 bg-primary/5 border-primary/20">
+                    <Paperclip className="h-4 w-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{cvFile.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(cvFile.size)}</p>
+                    </div>
+                    <button
+                      onClick={() => { setCvFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                      className="h-6 w-6 rounded-full hover:bg-destructive/10 flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-1 w-full flex items-center gap-2 border border-dashed rounded-lg p-3 text-sm text-muted-foreground hover:bg-muted/30 hover:border-primary/40 transition-all"
+                  >
+                    <Upload className="h-4 w-4 shrink-0" />
+                    <span>Click to upload CV — PDF, DOC, or DOCX</span>
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -250,26 +303,43 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
   );
 }
 
-// ── Application Detail Drawer ──────────────────────────────────────────────────
-function ApplicationDetail({ app, onClose, onStatusChange }: {
-  app: Application; onClose: () => void;
-  onStatusChange: (id: string, status: ApplicationStatus) => void;
+// ── Application Detail Modal ───────────────────────────────────────────────────
+function ApplicationDetail({ app, onClose, onUpdate }: {
+  app: Application;
+  onClose: () => void;
+  onUpdate: (id: string, changes: Partial<Application>) => void;
 }) {
+  const [status, setStatus] = useState<ApplicationStatus>(app.status);
+  const [interviewNotes, setInterviewNotes] = useState(app.interviewNotes || "");
+  const [rejectionReason, setRejectionReason] = useState(app.rejectionReason || "");
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    onUpdate(app.id, { status, interviewNotes, rejectionReason });
+    setSaved(true);
+    setTimeout(() => { setSaved(false); onClose(); }, 800);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-lg bg-background rounded-xl shadow-2xl overflow-y-auto max-h-[85vh]" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-lg bg-background rounded-xl shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
-          <h2 className="font-bold">{app.givenName} {app.familyName}</h2>
+          <div>
+            <h2 className="font-bold">{app.givenName} {app.familyName}</h2>
+            <p className="text-xs text-muted-foreground">Applied {new Date(app.submittedAt).toLocaleDateString("en-GB")}</p>
+          </div>
           <button onClick={onClose} className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center"><X className="h-4 w-4" /></button>
         </div>
-        <div className="p-5 space-y-4">
+
+        <div className="p-5 space-y-5">
+          {/* Status badge */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border", APP_STATUS_COLORS[app.status])}>
+            <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", APP_STATUS_COLORS[app.status])}>
               {APP_STATUS_LABELS[app.status]}
             </span>
-            <span className="text-xs text-muted-foreground">Applied {new Date(app.submittedAt).toLocaleDateString("en-GB")}</span>
           </div>
 
+          {/* Contact info */}
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{app.email}</p></div>
             <div><p className="text-xs text-muted-foreground">Phone</p><p className="font-medium">{app.phone || "—"}</p></div>
@@ -285,6 +355,18 @@ function ApplicationDetail({ app, onClose, onStatusChange }: {
             </div>
           </div>
 
+          {/* CV */}
+          {app.cvFileName && (
+            <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+              <FileText className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{app.cvFileName}</p>
+                {app.cvFileSize && <p className="text-xs text-muted-foreground">{formatFileSize(app.cvFileSize)}</p>}
+              </div>
+            </div>
+          )}
+
+          {/* Cover Letter */}
           {app.coverLetter && (
             <div>
               <p className="text-xs text-muted-foreground mb-1">Cover Letter</p>
@@ -292,6 +374,7 @@ function ApplicationDetail({ app, onClose, onStatusChange }: {
             </div>
           )}
 
+          {/* LinkedIn */}
           {app.linkedIn && (
             <div>
               <p className="text-xs text-muted-foreground mb-1">LinkedIn</p>
@@ -299,16 +382,17 @@ function ApplicationDetail({ app, onClose, onStatusChange }: {
             </div>
           )}
 
+          {/* Update Status */}
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Update Status</p>
+            <Label className="text-xs text-muted-foreground mb-2 block">Pipeline Stage</Label>
             <div className="flex flex-wrap gap-2">
               {(Object.keys(APP_STATUS_LABELS) as ApplicationStatus[]).map(s => (
                 <button
                   key={s}
-                  onClick={() => { onStatusChange(app.id, s); onClose(); }}
+                  onClick={() => setStatus(s)}
                   className={cn(
                     "text-xs px-2.5 py-1 rounded-full border font-medium transition-all",
-                    app.status === s ? APP_STATUS_COLORS[s] : "border-border text-muted-foreground hover:bg-muted"
+                    status === s ? APP_STATUS_COLORS[s] : "border-border text-muted-foreground hover:bg-muted"
                   )}
                 >
                   {APP_STATUS_LABELS[s]}
@@ -316,6 +400,43 @@ function ApplicationDetail({ app, onClose, onStatusChange }: {
               ))}
             </div>
           </div>
+
+          {/* Interview Notes */}
+          <div>
+            <Label className="flex items-center gap-1.5 mb-1">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Interview Notes
+            </Label>
+            <Textarea
+              className="min-h-[90px] text-sm"
+              value={interviewNotes}
+              onChange={e => setInterviewNotes(e.target.value)}
+              placeholder="Add notes from interviews, phone screens, or assessments…"
+            />
+          </div>
+
+          {/* Rejection Reason — shown when rejected */}
+          {(status === "rejected" || rejectionReason) && (
+            <div>
+              <Label className="flex items-center gap-1.5 mb-1 text-destructive">
+                <XCircle className="h-3.5 w-3.5" />
+                Rejection Reason
+              </Label>
+              <Textarea
+                className="min-h-[70px] text-sm border-destructive/30 focus-visible:ring-destructive/30"
+                value={rejectionReason}
+                onChange={e => setRejectionReason(e.target.value)}
+                placeholder="Briefly note why this candidate was not progressed…"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 bg-background border-t p-4 flex items-center justify-end gap-3">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          {saved
+            ? <Button disabled><CheckCircle2 className="h-4 w-4 mr-1" />Saved</Button>
+            : <Button onClick={handleSave}>Save Changes</Button>}
         </div>
       </div>
     </div>
@@ -323,14 +444,23 @@ function ApplicationDetail({ app, onClose, onStatusChange }: {
 }
 
 // ── Vacancy Detail View ────────────────────────────────────────────────────────
-function VacancyDetail({ vacancy, applications, onBack, onApply, onStatusChange }: {
+function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp }: {
   vacancy: Vacancy;
   applications: Application[];
   onBack: () => void;
   onApply: () => void;
-  onStatusChange: (id: string, status: ApplicationStatus) => void;
+  onUpdateApp: (id: string, changes: Partial<Application>) => void;
 }) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [appFilter, setAppFilter] = useState<ApplicationStatus | "all">("all");
+
+  const filteredApps = appFilter === "all" ? applications : applications.filter(a => a.status === appFilter);
+
+  // When an app is updated, re-sync the selected app reference
+  const handleUpdate = (id: string, changes: Partial<Application>) => {
+    onUpdateApp(id, changes);
+    setSelectedApp(null);
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -338,6 +468,7 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onStatusChange 
         <ArrowLeft className="h-4 w-4" /> Back to vacancies
       </button>
 
+      {/* Vacancy Header */}
       <div className="rounded-xl border bg-card p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
@@ -379,30 +510,57 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onStatusChange 
         </div>
       </div>
 
-      {/* Applications */}
+      {/* Applications Panel */}
       <div className="rounded-xl border bg-card p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="font-semibold flex items-center gap-2">
             <Users className="h-4 w-4" />
             Applications
             <span className="text-xs bg-muted rounded-full px-2 py-0.5">{applications.length}</span>
           </h3>
+          {/* Pipeline filter */}
+          <div className="flex gap-1 flex-wrap">
+            {(["all", ...Object.keys(APP_STATUS_LABELS)] as const).map(s => {
+              const count = s === "all" ? applications.length : applications.filter(a => a.status === s).length;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setAppFilter(s as ApplicationStatus | "all")}
+                  className={cn(
+                    "text-xs px-2.5 py-1 rounded-full border font-medium transition-all",
+                    appFilter === s
+                      ? s === "all" ? "bg-foreground text-background border-foreground" : APP_STATUS_COLORS[s as ApplicationStatus]
+                      : "border-border text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {s === "all" ? "All" : APP_STATUS_LABELS[s as ApplicationStatus]} {count > 0 && <span className="ml-0.5 opacity-70">({count})</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        {applications.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No applications yet.</p>
+
+        {filteredApps.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {applications.length === 0 ? "No applications yet." : "No applications in this stage."}
+          </p>
         ) : (
           <div className="space-y-2">
-            {applications.map(app => (
+            {filteredApps.map(app => (
               <button
                 key={app.id}
                 onClick={() => setSelectedApp(app)}
                 className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/40 transition-colors text-left group"
               >
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                   {app.givenName[0]}{app.familyName[0]}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                    {app.cvFileName && <span title="CV attached"><Paperclip className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
+                    {app.interviewNotes && <span title="Has interview notes"><MessageSquare className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
+                  </div>
                   <p className="text-xs text-muted-foreground">{app.email} · Applied {new Date(app.submittedAt).toLocaleDateString("en-GB")}</p>
                 </div>
                 <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
@@ -417,9 +575,9 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onStatusChange 
 
       {selectedApp && (
         <ApplicationDetail
-          app={selectedApp}
+          app={{ ...selectedApp, ...applications.find(a => a.id === selectedApp.id) }}
           onClose={() => setSelectedApp(null)}
-          onStatusChange={onStatusChange}
+          onUpdate={handleUpdate}
         />
       )}
     </div>
@@ -444,17 +602,15 @@ export default function RecruitmentPage() {
     return matchSearch && matchStatus;
   });
 
-  const handleAddVacancy = (v: Vacancy) => {
-    setVacancies(prev => [v, ...prev]);
-  };
+  const handleAddVacancy = (v: Vacancy) => setVacancies(prev => [v, ...prev]);
 
   const handleSubmitApplication = (app: Application) => {
     setApplications(prev => [app, ...prev]);
     setVacancies(prev => prev.map(v => v.id === app.vacancyId ? { ...v, applicationCount: v.applicationCount + 1 } : v));
   };
 
-  const handleStatusChange = (appId: string, status: ApplicationStatus) => {
-    setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a));
+  const handleUpdateApp = (appId: string, changes: Partial<Application>) => {
+    setApplications(prev => prev.map(a => a.id === appId ? { ...a, ...changes } : a));
   };
 
   const vacancyApplications = selectedVacancy
@@ -469,7 +625,7 @@ export default function RecruitmentPage() {
           applications={vacancyApplications}
           onBack={() => setSelectedVacancy(null)}
           onApply={() => setShowApply(true)}
-          onStatusChange={handleStatusChange}
+          onUpdateApp={handleUpdateApp}
         />
         {showApply && (
           <ApplyModal
@@ -506,7 +662,7 @@ export default function RecruitmentPage() {
           <p className="text-2xl font-bold">{applications.length}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">Shortlisted</p>
+          <p className="text-xs text-muted-foreground font-medium mb-1">In Pipeline</p>
           <p className="text-2xl font-bold">{applications.filter(a => a.status === "shortlisted" || a.status === "interview" || a.status === "offered").length}</p>
         </div>
       </div>
