@@ -1,0 +1,206 @@
+import { useApp } from "@/context/AppContext";
+import { DEMO_CASES, DEMO_WORKERS, DEMO_INVOICES } from "@/data/demo";
+import { StatusBadge } from "@/components/StatusBadge";
+import { SLATimer } from "@/components/SLATimer";
+import { Link } from "react-router-dom";
+import {
+  AlertTriangle, CheckCircle2, Clock, FileText, Users,
+  TrendingUp, CreditCard, Activity, ArrowRight, Shield, Briefcase,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+function StatCard({ label, value, sub, icon: Icon, color, trend }: {
+  label: string; value: string | number; sub?: string; icon: React.FC<{ className?: string }>;
+  color?: string; trend?: string;
+}) {
+  return (
+    <div className="card-stat flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", color ?? "bg-primary/10")}>
+          <Icon className={cn("h-4 w-4", color ? "text-white" : "text-primary")} />
+        </div>
+      </div>
+      <div>
+        <div className="text-2xl font-bold">{value}</div>
+        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+        {trend && <p className="text-xs text-secondary mt-0.5">{trend}</p>}
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  const { currentUser, currentTenant, isInternal } = useApp();
+
+  const tenantId = currentTenant?.id;
+  const cases = tenantId ? DEMO_CASES.filter(c => c.tenantId === tenantId) : DEMO_CASES;
+  const workers = tenantId ? DEMO_WORKERS.filter(w => w.tenantId === tenantId) : DEMO_WORKERS;
+  const invoices = tenantId ? DEMO_INVOICES.filter(i => i.tenantId === tenantId) : DEMO_INVOICES;
+
+  const openCases = cases.filter(c => !["closed", "cancelled", "filed"].includes(c.status));
+  const overdueCases = cases.filter(c => c.isOverdue);
+  const unpaidInvoices = invoices.filter(i => i.status === "unpaid");
+  const totalUnpaid = unpaidInvoices.reduce((s, i) => s + i.total, 0);
+
+  // Expiry warnings (next 90 days)
+  const today = new Date();
+  const in90 = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
+  const expiringPassports = workers.filter(w => w.passportExpiry && new Date(w.passportExpiry) < in90 && new Date(w.passportExpiry) > today);
+  const expiringVisas = workers.filter(w => w.visaExpiry && new Date(w.visaExpiry) < in90 && new Date(w.visaExpiry) > today);
+
+  const statusGroups = openCases.reduce<Record<string, number>>((acc, c) => {
+    acc[c.status] = (acc[c.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {isInternal ? "Operations Dashboard" : "Compliance Dashboard"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {currentTenant ? currentTenant.name : "All Tenants"} · {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/reporting">+ New Report</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/sponsorship">+ New CoS Draft</Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Overdue banner */}
+      {overdueCases.length > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="font-medium">{overdueCases.length} overdue case{overdueCases.length !== 1 ? "s" : ""} require immediate attention</span>
+          <Button variant="destructive" size="sm" className="ml-auto h-7 text-xs" asChild>
+            <Link to="/sponsorship?filter=overdue">View Overdue</Link>
+          </Button>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Open Cases" value={openCases.length} sub={`${overdueCases.length} overdue`} icon={Briefcase} />
+        <StatCard label="Active Workers" value={workers.filter(w => w.status === "active").length} sub="Sponsored employees" icon={Users} />
+        <StatCard label="Unpaid Invoices" value={`£${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} invoices`} icon={CreditCard} />
+        <StatCard label="Expiries (90 days)" value={expiringVisas.length + expiringPassports.length} sub={`${expiringVisas.length} visas · ${expiringPassports.length} passports`} icon={AlertTriangle} />
+      </div>
+
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Cases by status */}
+        <div className="lg:col-span-2 rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Cases by Status</h2>
+            <Button variant="ghost" size="sm" asChild><Link to="/sponsorship" className="flex items-center gap-1 text-xs">View all <ArrowRight className="h-3 w-3" /></Link></Button>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5">
+            {Object.entries(statusGroups).map(([status, count]) => (
+              <div key={status} className="text-center rounded-lg bg-muted/50 p-3">
+                <div className="text-xl font-bold">{count}</div>
+                <StatusBadge status={status} className="mt-1 text-[10px]" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {cases.filter(c => !["closed", "cancelled"].includes(c.status)).slice(0, 5).map(c => (
+              <Link key={c.id} to={`/sponsorship/${c.id}`}
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group">
+                <div className={cn("h-2 w-2 rounded-full shrink-0", c.isOverdue ? "bg-destructive" : "bg-secondary")} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{c.title}</p>
+                  <p className="text-xs text-muted-foreground">{c.caseNumber}</p>
+                </div>
+                <StatusBadge status={c.status} />
+                {c.dueDate && <SLATimer dueDate={c.dueDate} isOverdue={c.isOverdue} compact />}
+                <ArrowRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-4">
+          {/* Worker expiries */}
+          <div className="rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-sm">Upcoming Expiries</h2>
+              <Button variant="ghost" size="sm" asChild><Link to="/people" className="text-xs">View all</Link></Button>
+            </div>
+            {[...expiringVisas.map(w => ({ worker: w, type: "Visa", expiry: w.visaExpiry! })),
+              ...expiringPassports.map(w => ({ worker: w, type: "Passport", expiry: w.passportExpiry! }))
+            ].sort((a, b) => new Date(a.expiry).getTime() - new Date(b.expiry).getTime()).slice(0, 5).map(item => {
+              const diff = Math.ceil((new Date(item.expiry).getTime() - today.getTime()) / 86400000);
+              return (
+                <div key={`${item.worker.id}-${item.type}`} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{item.worker.givenName} {item.worker.familyName}</p>
+                    <p className="text-xs text-muted-foreground">{item.type} · expires {new Date(item.expiry).toLocaleDateString("en-GB")}</p>
+                  </div>
+                  <span className={cn("text-xs font-medium", diff <= 30 ? "text-destructive" : diff <= 60 ? "text-warning" : "text-muted-foreground")}>
+                    {diff}d
+                  </span>
+                </div>
+              );
+            })}
+            {expiringVisas.length + expiringPassports.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No upcoming expiries</p>
+            )}
+          </div>
+
+          {/* Unpaid invoices */}
+          <div className="rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-sm">Unpaid Invoices</h2>
+              <Button variant="ghost" size="sm" asChild><Link to="/billing" className="text-xs">View all</Link></Button>
+            </div>
+            {unpaidInvoices.slice(0, 3).map(inv => (
+              <div key={inv.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div>
+                  <p className="text-sm font-medium">{inv.invoiceNumber}</p>
+                  <p className="text-xs text-muted-foreground">Due {new Date(inv.dueDate).toLocaleDateString("en-GB")}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-destructive">£{inv.total.toLocaleString()}</p>
+                  <StatusBadge status={inv.status} />
+                </div>
+              </div>
+            ))}
+            {unpaidInvoices.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">All invoices paid ✓</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Internal: cross-tenant view */}
+      {isInternal && (
+        <div className="rounded-xl border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+          <h2 className="font-semibold mb-4">Caseworker Workload</h2>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "James Adebayo", active: 3, overdue: 1 },
+              { label: "Deniz Yilmaz", active: 2, overdue: 0 },
+            ].map(cw => (
+              <div key={cw.label} className="rounded-lg border p-4">
+                <p className="font-medium text-sm">{cw.label}</p>
+                <div className="flex gap-4 mt-2">
+                  <div><p className="text-xl font-bold">{cw.active}</p><p className="text-xs text-muted-foreground">Active</p></div>
+                  <div><p className={cn("text-xl font-bold", cw.overdue > 0 ? "text-destructive" : "")}>{cw.overdue}</p><p className="text-xs text-muted-foreground">Overdue</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
