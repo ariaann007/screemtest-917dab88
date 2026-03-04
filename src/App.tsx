@@ -13,6 +13,8 @@ import RequestsPage from "@/pages/Requests";
 import RecruitmentPage from "@/pages/Recruitment";
 import SettingsPage from "@/pages/Settings";
 import AdminPage from "@/pages/Admin";
+import LeaveManagementPage from "@/pages/LeaveManagement";
+import DocumentsPage from "@/pages/Documents";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
               <Route path="/people" element={<PeoplePage />} />
               <Route path="/requests" element={<RequestsPage />} />
               <Route path="/recruitment" element={<RecruitmentPage />} />
+              <Route path="/leave" element={<LeaveManagementPage />} />
+              <Route path="/documents" element={<DocumentsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
