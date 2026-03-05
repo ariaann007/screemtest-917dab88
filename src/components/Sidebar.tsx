@@ -40,13 +40,10 @@ export function Sidebar() {
       {/* Logo */}
       <div className="h-14 flex items-center px-5 border-b border-sidebar-border shrink-0">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-secondary flex items-center justify-center">
-            <ShieldCheck className="h-4 w-4 text-white" />
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: "hsl(267 80% 57%)" }}>
+            <span className="text-white font-black text-xs tracking-tighter">SC</span>
           </div>
-          <div>
-            <span className="text-sidebar-foreground font-bold text-sm tracking-tight">Denizns</span>
-            <span className="text-secondary text-sm font-bold"> Compliance</span>
-          </div>
+          <span className="font-black text-base tracking-tight" style={{ color: "hsl(74 100% 56%)" }}>SCREEM</span>
         </div>
       </div>
 
@@ -129,7 +126,7 @@ export function Sidebar() {
           <div className="min-w-0">
             <p className="text-xs font-medium text-sidebar-foreground truncate">{currentUser.name}</p>
             <p className="text-[10px] text-sidebar-foreground/50 truncate">
-              {isInternal ? "Denizns Staff" : currentTenant?.name}
+              {isInternal ? "SCREEM Staff" : currentTenant?.name}
             </p>
           </div>
         </div>
