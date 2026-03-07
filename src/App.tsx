@@ -7,7 +7,6 @@ import { AppProvider } from "@/context/AppContext";
 import { AppLayout } from "@/components/AppLayout";
 import DashboardPage from "@/pages/Dashboard";
 import SponsorshipPage from "@/pages/Sponsorship";
-import ReportingPage from "@/pages/Reporting";
 import PeoplePage from "@/pages/People";
 import RequestsPage from "@/pages/Requests";
 import RecruitmentPage from "@/pages/Recruitment";
@@ -30,10 +29,6 @@ const App = () => (
               <Route path="/" element={<DashboardPage />} />
               <Route path="/sponsorship" element={<SponsorshipPage />} />
               <Route path="/sponsorship/:id" element={<SponsorshipPage />} />
-              <Route path="/sponsorship/cos" element={<SponsorshipPage tab="cos" />} />
-              <Route path="/sponsorship/cos-list" element={<SponsorshipPage tab="cos-list" />} />
-              <Route path="/sponsorship/report-migrant" element={<SponsorshipPage tab="migrant" />} />
-              <Route path="/sponsorship/report-business" element={<SponsorshipPage tab="business" />} />
               <Route path="/people" element={<PeoplePage />} />
               <Route path="/requests" element={<RequestsPage />} />
               <Route path="/recruitment" element={<RecruitmentPage />} />
