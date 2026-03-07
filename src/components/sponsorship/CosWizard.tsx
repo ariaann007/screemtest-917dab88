@@ -235,13 +235,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         </div>
       );
     }
-    // step 2 for assisted = show invoice step directly (no redirect to avoid re-render loop)
-    // falls through to the invoice block below
-  }
-
-  if (path === "assisted" && step === 2) {
-    // Render invoice block — handled by the step === 6 block but duplicated key condition
-    // Reset to use a flag instead: force render of invoice content
+    // step === 2 for assisted falls through to the shared invoice block below
   }
 
   // Full form path
