@@ -80,21 +80,36 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
   const totalSteps = path === "assisted" ? 3 : STEPS.length;
 
   const StepIndicator = () => (
-    <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
-      {STEPS.slice(0, path === "assisted" ? 3 : STEPS.length).map((s, i) => (
-        <div key={s.id} className="flex items-center gap-1 shrink-0">
-          <div className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
-            i === step ? "bg-primary text-primary-foreground" :
-            i < step ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
-          )}>
-            {i < step ? <CheckCircle2 className="h-3 w-3" /> : <s.icon className="h-3 w-3" />}
-            {s.label}
+    <nav aria-label="Progress" className="flex items-center gap-1 mb-6 overflow-x-auto pb-1 no-scrollbar">
+      {STEPS.slice(0, path === "assisted" ? 3 : STEPS.length).map((s, i) => {
+        const isCurrent = i === step;
+        const isCompleted = i < step;
+        const isDisabled = i > step;
+
+        return (
+          <div key={s.id} className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => isCompleted && setStep(i)}
+              disabled={isDisabled || isCurrent}
+              aria-current={isCurrent ? "step" : undefined}
+              aria-label={`Step ${i + 1}: ${s.label}`}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                isCurrent ? "bg-primary text-primary-foreground shadow-sm scale-105" :
+                isCompleted ? "bg-success/10 text-success hover:bg-success/20 cursor-pointer" : 
+                "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+              )}
+            >
+              {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : <s.icon className={cn("h-3.5 w-3.5", isCurrent && "animate-pulse")} />}
+              <span>{s.label}</span>
+            </button>
+            {i < (path === "assisted" ? 2 : (path === "client" ? STEPS.length - 1 : 0)) && (
+              <ChevronRight className="h-3 w-3 text-muted-foreground/50 mx-0.5" />
+            )}
           </div>
-          {i < (path === "assisted" ? 2 : STEPS.length - 1) && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-        </div>
-      ))}
-    </div>
+        );
+      })}
+    </nav>
   );
 
   const NavButtons = ({ canNext = true }: { canNext?: boolean }) => (
@@ -116,14 +131,14 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
     </div>
   );
 
-  const SearchableSelect = ({ value, onChange, options, placeholder }: {
-    value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder: string;
+  const SearchableSelect = ({ value, onChange, options, placeholder, id }: {
+    value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder: string; id?: string;
   }) => {
     const [q, setQ] = useState("");
     const filtered = options.filter(o => o.label.toLowerCase().includes(q.toLowerCase()));
     return (
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
+        <SelectTrigger id={id}><SelectValue placeholder={placeholder} /></SelectTrigger>
         <SelectContent>
           <div className="p-2"><Input placeholder="Search…" value={q} onChange={e => setQ(e.target.value)} className="h-7 text-xs" /></div>
           {filtered.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -186,35 +201,35 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
           <StepIndicator />
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><Label>Candidate Name *</Label><Input value={form.assistedName} onChange={e => update("assistedName", e.target.value)} className="mt-1" placeholder="Full name as on passport" /></div>
-              <div><Label>Job Title *</Label><Input value={form.assistedJobTitle} onChange={e => update("assistedJobTitle", e.target.value)} className="mt-1" placeholder="e.g. Senior Care Worker" /></div>
+              <div><Label htmlFor="assistedName">Candidate Name *</Label><Input id="assistedName" value={form.assistedName} onChange={e => update("assistedName", e.target.value)} className="mt-1" placeholder="Full name as on passport" /></div>
+              <div><Label htmlFor="assistedJobTitle">Job Title *</Label><Input id="assistedJobTitle" value={form.assistedJobTitle} onChange={e => update("assistedJobTitle", e.target.value)} className="mt-1" placeholder="e.g. Senior Care Worker" /></div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><Label>Phone Number *</Label><Input value={form.assistedPhone} onChange={e => update("assistedPhone", e.target.value)} className="mt-1" /></div>
-              <div><Label>Email Address *</Label><Input type="email" value={form.assistedEmail} onChange={e => update("assistedEmail", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="assistedPhone">Phone Number *</Label><Input id="assistedPhone" value={form.assistedPhone} onChange={e => update("assistedPhone", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="assistedEmail">Email Address *</Label><Input id="assistedEmail" type="email" value={form.assistedEmail} onChange={e => update("assistedEmail", e.target.value)} className="mt-1" /></div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><Label>Number of Hours *</Label><Input type="number" value={form.assistedHours} onChange={e => update("assistedHours", e.target.value)} className="mt-1" placeholder="Weekly hours" /></div>
-              <div><Label>Pay Rate *</Label><div className="mt-1 relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span><Input type="number" className="pl-6" value={form.assistedPayRate} onChange={e => update("assistedPayRate", e.target.value)} placeholder="0.00" /></div></div>
+              <div><Label htmlFor="assistedHours">Number of Hours *</Label><Input id="assistedHours" type="number" value={form.assistedHours} onChange={e => update("assistedHours", e.target.value)} className="mt-1" placeholder="Weekly hours" /></div>
+              <div><Label htmlFor="assistedPayRate">Pay Rate *</Label><div className="mt-1 relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span><Input id="assistedPayRate" type="number" className="pl-6" value={form.assistedPayRate} onChange={e => update("assistedPayRate", e.target.value)} placeholder="0.00" /></div></div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><Label>Start Date of Employment *</Label><Input type="date" value={form.assistedStartDate} onChange={e => update("assistedStartDate", e.target.value)} className="mt-1" /></div>
-              <div><Label>End Date of Employment *</Label><Input type="date" value={form.assistedEndDate} onChange={e => update("assistedEndDate", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="assistedStartDate">Start Date of Employment *</Label><Input id="assistedStartDate" type="date" value={form.assistedStartDate} onChange={e => update("assistedStartDate", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="assistedEndDate">End Date of Employment *</Label><Input id="assistedEndDate" type="date" value={form.assistedEndDate} onChange={e => update("assistedEndDate", e.target.value)} className="mt-1" /></div>
             </div>
 
             <div>
               <Label>Signed Offer Letter *</Label>
               <p className="text-xs text-muted-foreground mb-2">Must include job title, hours, and pay rate.</p>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/30 transition-colors cursor-pointer group">
+              <div tabIndex={0} role="button" aria-label="Upload offer letter" className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/30 transition-colors cursor-pointer group focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2 group-hover:text-primary transition-colors" />
                 <p className="text-sm font-medium">Click to upload or drag & drop</p>
                 <p className="text-xs text-muted-foreground">PDF, DOC up to 10MB</p>
               </div>
             </div>
-            <div><Label>Additional Notes (optional)</Label><Textarea value={form.assistedNotes} onChange={e => update("assistedNotes", e.target.value)} className="mt-1" rows={3} placeholder="Any specific requirements or instructions for the caseworker..." /></div>
+            <div><Label htmlFor="assistedNotes">Additional Notes (optional)</Label><Textarea id="assistedNotes" value={form.assistedNotes} onChange={e => update("assistedNotes", e.target.value)} className="mt-1" rows={3} placeholder="Any specific requirements or instructions for the caseworker..." /></div>
           </div>
           <NavButtons canNext={!!(form.assistedName && form.assistedJobTitle && form.assistedPhone && form.assistedEmail && form.assistedHours && form.assistedPayRate && form.assistedStartDate && form.assistedEndDate)} />
         </div>
@@ -232,21 +247,21 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         <StepIndicator />
         <div className="space-y-4">
           <div>
-            <Label>Route Type *</Label>
+            <Label htmlFor="routeType">Route Type *</Label>
             <Select value={form.route} onValueChange={v => update("route", v)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select route…" /></SelectTrigger>
+              <SelectTrigger id="routeType" className="mt-1"><SelectValue placeholder="Select route…" /></SelectTrigger>
               <SelectContent>{ROUTE_OPTIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Category *</Label>
+            <Label htmlFor="categoryType">Category *</Label>
             <Select value={form.category} onValueChange={v => update("category", v)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select category…" /></SelectTrigger>
+              <SelectTrigger id="categoryType" className="mt-1"><SelectValue placeholder="Select category…" /></SelectTrigger>
               <SelectContent>{CATEGORY_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           {form.category && (
-            <div className={cn("rounded-lg p-3 text-sm", form.category.includes("ISC liable") ? "bg-warning-light text-warning" : "bg-success-light text-success")}>
+            <div role="alert" className={cn("rounded-lg p-3 text-sm", form.category.includes("ISC liable") ? "bg-warning-light text-warning" : "bg-success-light text-success")}>
               {form.category.includes("ISC liable") ? "⚠ ISC liable – Immigration Skills Charge will apply" : "✓ ISC exempt – No Immigration Skills Charge"}
             </div>
           )}
@@ -264,16 +279,16 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         <StepIndicator />
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div><Label>Family Name *</Label><Input value={form.familyName} onChange={e => update("familyName", e.target.value)} className="mt-1" /></div>
-            <div><Label>Given Name(s) *</Label><Input value={form.givenName} onChange={e => update("givenName", e.target.value)} className="mt-1" /></div>
-            <div><Label>Other Names</Label><Input value={form.otherNames} onChange={e => update("otherNames", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="familyName">Family Name *</Label><Input id="familyName" value={form.familyName} onChange={e => update("familyName", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="givenName">Given Name(s) *</Label><Input id="givenName" value={form.givenName} onChange={e => update("givenName", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="otherNames">Other Names</Label><Input id="otherNames" value={form.otherNames} onChange={e => update("otherNames", e.target.value)} className="mt-1" /></div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Sex of Worker *</Label>
+              <Label htmlFor="sex">Sex of Worker *</Label>
               <Select value={form.sex} onValueChange={v => update("sex", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select sex..." /></SelectTrigger>
+                <SelectTrigger id="sex" className="mt-1"><SelectValue placeholder="Select sex..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Female">Female</SelectItem>
                   <SelectItem value="Male">Male</SelectItem>
@@ -281,55 +296,55 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Date of Birth *</Label><Input type="date" value={form.dob} onChange={e => update("dob", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="dob">Date of Birth *</Label><Input id="dob" type="date" value={form.dob} onChange={e => update("dob", e.target.value)} className="mt-1" /></div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Nationality *</Label>
-              <div className="mt-1"><SearchableSelect value={form.nationality} onChange={v => update("nationality", v)} options={countries} placeholder="Search countries..." /></div>
+              <Label htmlFor="nationality">Nationality *</Label>
+              <div className="mt-1"><SearchableSelect id="nationality" value={form.nationality} onChange={v => update("nationality", v)} options={countries} placeholder="Search countries..." /></div>
             </div>
             <div>
-              <Label>Country of Birth *</Label>
-              <div className="mt-1"><SearchableSelect value={form.countryOfBirth} onChange={v => update("countryOfBirth", v)} options={countries} placeholder="Search countries..." /></div>
+              <Label htmlFor="countryOfBirth">Country of Birth *</Label>
+              <div className="mt-1"><SearchableSelect id="countryOfBirth" value={form.countryOfBirth} onChange={v => update("countryOfBirth", v)} options={countries} placeholder="Search countries..." /></div>
             </div>
           </div>
-          <div><Label>Place of Birth *</Label><Input value={form.placeOfBirth} onChange={e => update("placeOfBirth", e.target.value)} className="mt-1" /></div>
+          <div><Label htmlFor="placeOfBirth">Place of Birth *</Label><Input id="placeOfBirth" value={form.placeOfBirth} onChange={e => update("placeOfBirth", e.target.value)} className="mt-1" /></div>
 
           <div className="border-t pt-3 mt-4">
             <p className="text-sm font-semibold mb-3 flex items-center gap-2"><FileText className="h-4 w-4" />Passport Details</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div><Label>Passport Number *</Label><Input value={form.passportNumber} onChange={e => update("passportNumber", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="passportNumber">Passport Number *</Label><Input id="passportNumber" value={form.passportNumber} onChange={e => update("passportNumber", e.target.value)} className="mt-1" /></div>
               <div>
-                <Label>Country of Residence *</Label>
-                <div className="mt-1"><SearchableSelect value={form.countryOfResidence} onChange={v => update("countryOfResidence", v)} options={countries} placeholder="Search countries..." /></div>
+                <Label htmlFor="countryOfResidence">Country of Residence *</Label>
+                <div className="mt-1"><SearchableSelect id="countryOfResidence" value={form.countryOfResidence} onChange={v => update("countryOfResidence", v)} options={countries} placeholder="Search countries..." /></div>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div><Label>Place of Issue *</Label><Input value={form.passportPlaceOfIssue} onChange={e => update("passportPlaceOfIssue", e.target.value)} className="mt-1" placeholder="e.g. London" /></div>
-              <div><Label>Issue Date *</Label><Input type="date" value={form.passportIssue} onChange={e => update("passportIssue", e.target.value)} className="mt-1" /></div>
-              <div><Label>Expiry Date *</Label><Input type="date" value={form.passportExpiry} onChange={e => update("passportExpiry", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="passportPlaceOfIssue">Place of Issue *</Label><Input id="passportPlaceOfIssue" value={form.passportPlaceOfIssue} onChange={e => update("passportPlaceOfIssue", e.target.value)} className="mt-1" placeholder="e.g. London" /></div>
+              <div><Label htmlFor="passportIssue">Issue Date *</Label><Input id="passportIssue" type="date" value={form.passportIssue} onChange={e => update("passportIssue", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="passportExpiry">Expiry Date *</Label><Input id="passportExpiry" type="date" value={form.passportExpiry} onChange={e => update("passportExpiry", e.target.value)} className="mt-1" /></div>
             </div>
           </div>
 
           <div className="border-t pt-3 mt-4">
             <p className="text-sm font-semibold mb-3 flex items-center gap-2"><User className="h-4 w-4" />Current Home Address</p>
             <div className="space-y-2">
-              <Input placeholder="Address line 1 *" value={form.address1} onChange={e => update("address1", e.target.value)} />
-              <Input placeholder="Address line 2" value={form.address2} onChange={e => update("address2", e.target.value)} />
+              <Input id="address1" placeholder="Address line 1 *" value={form.address1} onChange={e => update("address1", e.target.value)} aria-label="Address line 1" />
+              <Input id="address2" placeholder="Address line 2" value={form.address2} onChange={e => update("address2", e.target.value)} aria-label="Address line 2" />
               <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="City/Town *" value={form.city} onChange={e => update("city", e.target.value)} />
-                <Input placeholder="County" value={form.county} onChange={e => update("county", e.target.value)} />
-                <Input placeholder="Postcode *" value={form.postcode} onChange={e => update("postcode", e.target.value)} />
+                <Input id="city" placeholder="City/Town *" value={form.city} onChange={e => update("city", e.target.value)} aria-label="City" />
+                <Input id="county" placeholder="County" value={form.county} onChange={e => update("county", e.target.value)} aria-label="County" />
+                <Input id="postcode" placeholder="Postcode *" value={form.postcode} onChange={e => update("postcode", e.target.value)} aria-label="Postcode" />
               </div>
-              <SearchableSelect value={form.country} onChange={v => update("country", v)} options={countries} placeholder="Country *" />
+              <SearchableSelect id="homeCountry" value={form.country} onChange={v => update("country", v)} options={countries} placeholder="Country *" />
             </div>
           </div>
           <div className="border-t pt-3 mt-4">
             <p className="text-sm font-semibold mb-3">Identification Numbers (optional)</p>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>NI Number</Label><Input value={form.niNumber} onChange={e => update("niNumber", e.target.value)} className="mt-1" /></div>
-              <div><Label>Employee Number</Label><Input value={form.employeeNumber} onChange={e => update("employeeNumber", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="niNumber">NI Number</Label><Input id="niNumber" value={form.niNumber} onChange={e => update("niNumber", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="employeeNumber">Employee Number</Label><Input id="employeeNumber" value={form.employeeNumber} onChange={e => update("employeeNumber", e.target.value)} className="mt-1" /></div>
             </div>
           </div>
         </div>
@@ -347,30 +362,32 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         <StepIndicator />
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Start Date *</Label><Input type="date" value={form.startDate} onChange={e => update("startDate", e.target.value)} className="mt-1" /></div>
-            <div><Label>End Date *</Label><Input type="date" value={form.endDate} onChange={e => update("endDate", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="startDate">Start Date *</Label><Input id="startDate" type="date" value={form.startDate} onChange={e => update("startDate", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="endDate">End Date *</Label><Input id="endDate" type="date" value={form.endDate} onChange={e => update("endDate", e.target.value)} className="mt-1" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Weekly Hours *</Label><Input type="number" value={form.weeklyHours} onChange={e => update("weeklyHours", e.target.value)} className="mt-1" /></div>
-            <div><Label>Job Title *</Label><Input value={form.jobTitle} onChange={e => update("jobTitle", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="weeklyHours">Weekly Hours *</Label><Input id="weeklyHours" type="number" value={form.weeklyHours} onChange={e => update("weeklyHours", e.target.value)} className="mt-1" /></div>
+            <div><Label htmlFor="jobTitle">Job Title *</Label><Input id="jobTitle" value={form.jobTitle} onChange={e => update("jobTitle", e.target.value)} className="mt-1" /></div>
           </div>
           <div>
-            <Label>Work Location *</Label>
-            <div className="mt-1"><SearchableSelect value={form.workLocation} onChange={v => update("workLocation", v)} options={locations} placeholder="Select primary location…" /></div>
+            <Label htmlFor="workLocation">Work Location *</Label>
+            <div className="mt-1"><SearchableSelect id="workLocation" value={form.workLocation} onChange={v => update("workLocation", v)} options={locations} placeholder="Select primary location…" /></div>
           </div>
           <div>
-            <Label>SOC Code *</Label>
-            <div className="mt-1"><SearchableSelect value={form.socCode} onChange={v => update("socCode", v)} options={socs} placeholder="Search SOC codes…" /></div>
+            <Label htmlFor="socCode">SOC Code *</Label>
+            <div className="mt-1"><SearchableSelect id="socCode" value={form.socCode} onChange={v => update("socCode", v)} options={socs} placeholder="Search SOC codes…" /></div>
           </div>
           <div>
-            <Label>Job Description (max 1000 chars)</Label>
-            <Textarea value={form.jobDescription} onChange={e => update("jobDescription", e.target.value.slice(0, 1000))} className="mt-1" rows={4} />
-            <p className="text-xs text-muted-foreground mt-1">{form.jobDescription.length}/1000</p>
+            <Label htmlFor="jobDescription">Job Description (max 1000 chars)</Label>
+            <div className="mt-1">
+              <Textarea id="jobDescription" value={form.jobDescription} onChange={e => update("jobDescription", e.target.value.slice(0, 1000))} rows={4} />
+              <p className="text-xs text-muted-foreground mt-1">{form.jobDescription.length}/1000</p>
+            </div>
           </div>
           <div>
-            <Label>Going rate route confirmed?</Label>
+            <Label htmlFor="requiresEta">Going rate route confirmed?</Label>
             <Select value={form.requiresEta} onValueChange={v => update("requiresEta", v)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectTrigger id="requiresEta" className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent>
             </Select>
           </div>
@@ -398,10 +415,11 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         <StepIndicator />
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Gross Salary *</Label><div className="mt-1 relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span><Input type="number" className="pl-6" value={form.grossSalary} onChange={e => update("grossSalary", e.target.value)} /></div></div>
-            <div><Label>Salary Period</Label>
+            <div><Label htmlFor="grossSalary">Gross Salary *</Label><div className="mt-1 relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span><Input id="grossSalary" type="number" className="pl-6" value={form.grossSalary} onChange={e => update("grossSalary", e.target.value)} /></div></div>
+            <div>
+              <Label htmlFor="salaryPeriod">Salary Period</Label>
               <Select value={form.salaryPeriod} onValueChange={v => update("salaryPeriod", v)}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="salaryPeriod" className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>{SALARY_PERIODS.map(p => <SelectItem key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -435,11 +453,11 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
             </div>
           )}
 
-          <div><Label>Registration Details Required (optional)</Label><Input value={form.registrationDetails} onChange={e => update("registrationDetails", e.target.value)} className="mt-1" placeholder="e.g. NMC pin" /></div>
+          <div><Label htmlFor="registrationDetails">Registration Details Required (optional)</Label><Input id="registrationDetails" value={form.registrationDetails} onChange={e => update("registrationDetails", e.target.value)} className="mt-1" placeholder="e.g. NMC pin" /></div>
           <div>
-            <Label>Worker requires ETA certificate?</Label>
+            <Label htmlFor="requiresEtaWorker">Worker requires ETA certificate?</Label>
             <Select value={form.requiresEta} onValueChange={v => update("requiresEta", v)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectTrigger id="requiresEtaWorker" className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent>
             </Select>
           </div>
@@ -456,37 +474,37 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         <StepIndicator />
         <div className="space-y-4">
           <div>
-            <Label>Does the candidate hold a PhD?</Label>
+            <Label htmlFor="hasPhd">Does the candidate hold a PhD?</Label>
             <Select value={form.hasPhd} onValueChange={v => update("hasPhd", v)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectTrigger id="hasPhd" className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent>
             </Select>
           </div>
           {form.hasPhd === "yes" && (
             <>
               <div>
-                <Label>Is the PhD relevant to the role?</Label>
+                <Label htmlFor="phdRelevant">Is the PhD relevant to the role?</Label>
                 <Select value={form.phdRelevant} onValueChange={v => update("phdRelevant", v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectTrigger id="phdRelevant" className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
                   <SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div><Label>Explanation</Label><Textarea value={form.phdExplanation} onChange={e => update("phdExplanation", e.target.value.slice(0, 1000))} className="mt-1" rows={3} /></div>
-              <div><Label>ECCTIS Reference (if overseas PhD)</Label><Input value={form.ecctisRef} onChange={e => update("ecctisRef", e.target.value)} className="mt-1" /></div>
+              <div><Label htmlFor="phdExplanation">Explanation</Label><Textarea id="phdExplanation" value={form.phdExplanation} onChange={e => update("phdExplanation", e.target.value.slice(0, 1000))} className="mt-1" rows={3} /></div>
+              <div><Label htmlFor="ecctisRef">ECCTIS Reference (if overseas PhD)</Label><Input id="ecctisRef" value={form.ecctisRef} onChange={e => update("ecctisRef", e.target.value)} className="mt-1" /></div>
               <div>
-                <Label>Is the PhD in a STEM subject?</Label>
+                <Label htmlFor="isStem">Is the PhD in a STEM subject?</Label>
                 <Select value={form.isStem} onValueChange={v => update("isStem", v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectTrigger id="isStem" className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
                   <SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent>
                 </Select>
               </div>
               {form.isStem === "yes" && (
-                <div><Label>STEM Explanation</Label><Textarea value={form.stemExplanation} onChange={e => update("stemExplanation", e.target.value.slice(0, 1000))} className="mt-1" rows={3} /></div>
+                <div><Label htmlFor="stemExplanation">STEM Explanation</Label><Textarea id="stemExplanation" value={form.stemExplanation} onChange={e => update("stemExplanation", e.target.value.slice(0, 1000))} className="mt-1" rows={3} /></div>
               )}
             </>
           )}
           {form.hasPhd === "no" && (
-            <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">No PhD details required. Proceed to the invoice step.</div>
+            <div role="status" className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">No PhD details required. Proceed to the invoice step.</div>
           )}
         </div>
         <NavButtons />
@@ -609,9 +627,9 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-6 border-t">
           <Button variant="outline" className="flex-1" onClick={() => setStep(s => s - 1)}>
-            <ChevronLeft className="h-4 w-4 mr-1" /> Back
+            <ChevronLeft className="h-4 w-4 mr-1" /> Back to Form
           </Button>
         </div>
       </div>
