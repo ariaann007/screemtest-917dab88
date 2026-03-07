@@ -235,8 +235,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         </div>
       );
     }
-    // step 2 = invoice
-    step === 2 && null;
+    // step 2 = invoice (falls through to invoice block below)
   }
 
   // Full form path
