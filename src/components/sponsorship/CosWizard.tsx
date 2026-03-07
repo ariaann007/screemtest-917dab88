@@ -514,7 +514,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
   }
 
   // Invoice step
-  if (step === 6 || (path === "assisted" && step === 2)) {
+  if (step === 6) {
     if (paymentConfirmed) {
       return (
         <div className="max-w-2xl text-center py-12">
