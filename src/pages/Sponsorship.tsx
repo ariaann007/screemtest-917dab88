@@ -13,7 +13,7 @@ import { Case } from "@/types";
 import CosWizard from "@/components/sponsorship/CosWizard";
 import ReportingPage from "@/pages/Reporting";
 
-export default function SponsorshipPage({ tab }: { tab?: "cos" | "migrant" | "business" }) {
+export default function SponsorshipPage({ tab }: { tab?: "cos" | "cos-list" | "migrant" | "business" }) {
   const { currentTenant } = useApp();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -60,8 +60,42 @@ export default function SponsorshipPage({ tab }: { tab?: "cos" | "migrant" | "bu
     );
   }
 
-  // Render CoS List
-  if (tab === "cos") {
+  // Render CoS Wizard directly for the 'cos' tab
+  if (tab === "cos" && !showWizard) {
+    setShowWizard(true);
+  }
+
+  if (showWizard) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <button 
+          onClick={() => {
+            if (tab === "cos") navigate("/sponsorship");
+            else setShowWizard(false);
+          }} 
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Sponsorship
+        </button>
+        <CosWizard onComplete={() => {
+          setShowWizard(false);
+          if (tab === "cos") navigate("/sponsorship");
+        }} />
+        
+        {tab === "cos" && (
+          <div className="mt-8 pt-8 border-t text-center">
+            <p className="text-sm text-muted-foreground mb-4">Need to see your existing drafts?</p>
+            <Button variant="outline" onClick={() => { setShowWizard(false); navigate("/sponsorship/cos-list"); }}>
+              View Case History & Drafts
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Render CoS List (as a secondary view now)
+  if (tab === "cos-list") {
     return (
       <div className="space-y-5 animate-fade-in">
         <div className="flex items-center justify-between">
@@ -70,11 +104,11 @@ export default function SponsorshipPage({ tab }: { tab?: "cos" | "migrant" | "bu
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold">Certificate of Sponsorship</h1>
+              <h1 className="text-2xl font-bold">Case History</h1>
               <p className="text-sm text-muted-foreground">Manage your CoS drafts and submissions</p>
             </div>
           </div>
-          <Button onClick={() => setShowWizard(true)}>
+          <Button onClick={() => navigate("/sponsorship/cos")}>
             <Plus className="h-4 w-4 mr-2" /> New CoS Draft
           </Button>
         </div>

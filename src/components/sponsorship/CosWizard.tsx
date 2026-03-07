@@ -146,7 +146,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
               <User className="h-5 w-5 text-primary" />
             </div>
             <h3 className="font-semibold mb-1">Option 1: Client Prepares</h3>
-            <p className="text-sm text-muted-foreground">You complete the full CoS pre-draft form. Denizns will review and approve.</p>
+            <p className="text-sm text-muted-foreground">You complete the full CoS pre-draft form. Screem will review and approve.</p>
             <div className="mt-3 text-xs font-medium text-secondary">£525 CoS fee + ISC</div>
           </button>
           <button
@@ -159,8 +159,8 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
             <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center mb-3">
               <FileText className="h-5 w-5 text-secondary" />
             </div>
-            <h3 className="font-semibold mb-1">Option 2: Denizns Prepares</h3>
-            <p className="text-sm text-muted-foreground">Provide minimal info and upload the offer letter. Denizns prepares the full draft.</p>
+            <h3 className="font-semibold mb-1">Option 2: Screem Caseworker Prepares</h3>
+            <p className="text-sm text-muted-foreground">Provide minimal info and upload the offer letter. Screem Caseworker prepares the full draft.</p>
             <div className="mt-3 text-xs font-medium text-secondary">£525 CoS fee + ISC + £600 service fee</div>
           </button>
         </div>
@@ -450,7 +450,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
     return (
       <div className="max-w-2xl">
         <h1 className="text-xl font-bold mb-1">Invoice Summary</h1>
-        <p className="text-sm text-muted-foreground mb-4">Review fees before submitting to Denizns</p>
+        <p className="text-sm text-muted-foreground mb-4">Review fees before submitting to Screem</p>
         <StepIndicator />
         <div className="rounded-xl border bg-card overflow-hidden mb-4">
           <div className="p-4 border-b bg-muted/30">
@@ -478,7 +478,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
             {isAssisted && (
               <div className="flex items-center justify-between p-4">
                 <div>
-                  <p className="text-sm font-medium">Denizns Service Fee</p>
+                  <p className="text-sm font-medium">Screem Service Fee</p>
                   <p className="text-xs text-muted-foreground">Assisted CoS preparation</p>
                 </div>
                 <p className="font-bold">£{serviceFee.toLocaleString()}</p>
@@ -491,7 +491,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
           </div>
         </div>
         <div className="rounded-lg bg-warning-light border border-warning/20 p-3 text-sm text-warning mb-4">
-          ⚠ Payment is required before this case will be reviewed by Denizns.
+          ⚠ Payment is required before this case will be reviewed by Screem.
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={() => setStep(s => s - 1)}>
