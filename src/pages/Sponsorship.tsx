@@ -542,10 +542,10 @@ function CosSection() {
 }
 
 // ─── Main Sponsorship Page ────────────────────────────────────────────────────
-type SponsorshipTab = "cos" | "migrant" | "business";
+type SponsorshipSection = "cos" | "migrant" | "business" | null;
 
 export default function SponsorshipPage() {
-  const [activeTab, setActiveTab] = useState<SponsorshipTab>("cos");
+  const [activeSection, setActiveSection] = useState<SponsorshipSection>(null);
   const { id } = useParams();
 
   // Handle case detail view (deep-link)
@@ -563,44 +563,82 @@ export default function SponsorshipPage() {
     );
   }
 
-  const tabs: { id: SponsorshipTab; label: string; icon: typeof Award }[] = [
-    { id: "cos", label: "Certificate of Sponsorship", icon: Award },
-    { id: "migrant", label: "Report a Migrant", icon: Users },
-    { id: "business", label: "Report a Business", icon: Building2 },
-  ];
+  // Section views
+  if (activeSection === "cos") {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <button onClick={() => setActiveSection(null)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Back to Sponsorship
+        </button>
+        <CosSection />
+      </div>
+    );
+  }
+  if (activeSection === "migrant") {
+    return (
+      <div className="animate-fade-in">
+        <ReportMigrantSection onBack={() => setActiveSection(null)} />
+      </div>
+    );
+  }
+  if (activeSection === "business") {
+    return (
+      <div className="animate-fade-in">
+        <ReportBusinessSection onBack={() => setActiveSection(null)} />
+      </div>
+    );
+  }
 
+  // Landing — 3 option cards
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
+    <div className="space-y-8 animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Sponsorship</h1>
         <p className="text-muted-foreground">Manage UKVI sponsorship obligations and reporting</p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 border-b">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-              activeTab === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <div className="grid gap-6 md:grid-cols-3">
+        <button
+          onClick={() => setActiveSection("cos")}
+          className="group relative flex flex-col items-start p-6 bg-card rounded-2xl border-2 border-transparent hover:border-primary/30 hover:bg-primary/[0.02] transition-all text-left shadow-sm"
+        >
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <Award className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="font-bold text-lg mb-2">Certificate of Sponsorship</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">Create, manage and submit CoS drafts for prospective workers.</p>
+          <div className="mt-auto pt-6 flex items-center text-primary font-semibold text-sm">
+            Manage CoS <ChevronRight className="ml-1 h-4 w-4" />
+          </div>
+        </button>
 
-      {/* Tab Content */}
-      <div>
-        {activeTab === "cos" && <CosSection />}
-        {activeTab === "migrant" && <ReportMigrantSection onBack={() => setActiveTab("cos")} />}
-        {activeTab === "business" && <ReportBusinessSection onBack={() => setActiveTab("cos")} />}
+        <button
+          onClick={() => setActiveSection("migrant")}
+          className="group relative flex flex-col items-start p-6 bg-card rounded-2xl border-2 border-transparent hover:border-secondary/30 hover:bg-secondary/[0.02] transition-all text-left shadow-sm"
+        >
+          <div className="h-12 w-12 rounded-xl bg-secondary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <Users className="h-6 w-6 text-secondary" />
+          </div>
+          <h3 className="font-bold text-lg mb-2">Report a Migrant</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">Notify UKVI about changes in worker circumstances or status.</p>
+          <div className="mt-auto pt-6 flex items-center text-secondary font-semibold text-sm">
+            Open Report <ChevronRight className="ml-1 h-4 w-4" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setActiveSection("business")}
+          className="group relative flex flex-col items-start p-6 bg-card rounded-2xl border-2 border-transparent hover:border-accent/30 hover:bg-accent/[0.02] transition-all text-left shadow-sm"
+        >
+          <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <Building2 className="h-6 w-6 text-accent" />
+          </div>
+          <h3 className="font-bold text-lg mb-2">Report a Business</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">Update organisation details, replacement contacts, or licence changes.</p>
+          <div className="mt-auto pt-6 flex items-center text-accent font-semibold text-sm">
+            Open Report <ChevronRight className="ml-1 h-4 w-4" />
+          </div>
+        </button>
       </div>
     </div>
   );
