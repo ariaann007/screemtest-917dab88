@@ -235,7 +235,9 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
         </div>
       );
     }
-    // step 2 = invoice (falls through to invoice block below)
+    // step 2 = jump directly to invoice block
+    setStep(6);
+    return null;
   }
 
   // Full form path
@@ -512,7 +514,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
   }
 
   // Invoice step
-  if (step === 6 || (path === "assisted" && step === 2)) {
+  if (step === 6) {
     if (paymentConfirmed) {
       return (
         <div className="max-w-2xl text-center py-12">
