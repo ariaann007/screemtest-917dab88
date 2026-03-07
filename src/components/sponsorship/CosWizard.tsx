@@ -120,7 +120,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
     value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder: string;
   }) => {
     const [q, setQ] = useState("");
-    const filtered = options.filter(o => o.label.toLowerCase().includes(q.toLowerCase())).slice(0, 20);
+    const filtered = options.filter(o => o.label.toLowerCase().includes(q.toLowerCase()));
     return (
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
