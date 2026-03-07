@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, ChevronRight, ChevronLeft, FileText, User, Briefcase, PoundSterling, BookOpen, Upload, AlertTriangle } from "lucide-react";
+import { CheckCircle2, ChevronRight, ChevronLeft, FileText, User, Briefcase, PoundSterling, BookOpen, Upload, AlertTriangle, CreditCard, Receipt } from "lucide-react";
 import { DEMO_COUNTRIES, DEMO_SOC_CODES, DEMO_WORK_LOCATIONS, DEMO_SOC_GOING_RATES } from "@/data/demo";
+import { COUNTRIES } from "@/data/countries";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +45,10 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
 
   const [form, setForm] = useState({
     route: "", category: "",
-    familyName: "", givenName: "", otherNames: "",
+    familyName: "", givenName: "", otherNames: "", sex: "",
     nationality: "", dob: "", countryOfBirth: "", placeOfBirth: "",
     countryOfResidence: "", passportNumber: "", passportIssue: "", passportExpiry: "",
+    passportPlaceOfIssue: "",
     placeOfIssue: "", address1: "", address2: "", city: "", county: "", postcode: "", country: "",
     ukIdCard: "", niNumber: "", nationalId: "", employeeNumber: "",
     startDate: "", endDate: "", weeklyHours: "", workLocation: "", otherLocations: [],
@@ -54,7 +56,10 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
     grossSalary: "", salaryPeriod: "year", registrationDetails: "", requiresEta: "",
     hasPhd: "", phdRelevant: "", phdExplanation: "", ecctisRef: "", isStem: "", stemExplanation: "",
     assistedName: "", assistedPhone: "", assistedEmail: "", assistedNotes: "",
+    assistedHours: "", assistedPayRate: "", assistedJobTitle: "", assistedStartDate: "", assistedEndDate: "",
   });
+  const [paymentChoice, setPaymentChoice] = useState<"now" | "later" | null>(null);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   const update = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -176,25 +181,42 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
     if (step === 1) {
       return (
         <div className="max-w-2xl">
-          <h1 className="text-xl font-bold mb-1">CoS Request (Assisted)</h1>
+          <h1 className="text-xl font-bold mb-1">CoS Request (Screem Caseworker Prepares)</h1>
+          <p className="text-sm text-muted-foreground mb-6">Provide the candidate and employment details. Our team will handle the full UKVI pre-draft.</p>
           <StepIndicator />
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Candidate Name *</Label><Input value={form.assistedName} onChange={e => update("assistedName", e.target.value)} className="mt-1" /></div>
-              <div><Label>Phone</Label><Input value={form.assistedPhone} onChange={e => update("assistedPhone", e.target.value)} className="mt-1" /></div>
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><Label>Candidate Name *</Label><Input value={form.assistedName} onChange={e => update("assistedName", e.target.value)} className="mt-1" placeholder="Full name as on passport" /></div>
+              <div><Label>Job Title *</Label><Input value={form.assistedJobTitle} onChange={e => update("assistedJobTitle", e.target.value)} className="mt-1" placeholder="e.g. Senior Care Worker" /></div>
             </div>
-            <div><Label>Email</Label><Input type="email" value={form.assistedEmail} onChange={e => update("assistedEmail", e.target.value)} className="mt-1" /></div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><Label>Phone Number *</Label><Input value={form.assistedPhone} onChange={e => update("assistedPhone", e.target.value)} className="mt-1" /></div>
+              <div><Label>Email Address *</Label><Input type="email" value={form.assistedEmail} onChange={e => update("assistedEmail", e.target.value)} className="mt-1" /></div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><Label>Number of Hours *</Label><Input type="number" value={form.assistedHours} onChange={e => update("assistedHours", e.target.value)} className="mt-1" placeholder="Weekly hours" /></div>
+              <div><Label>Pay Rate *</Label><div className="mt-1 relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span><Input type="number" className="pl-6" value={form.assistedPayRate} onChange={e => update("assistedPayRate", e.target.value)} placeholder="0.00" /></div></div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><Label>Start Date of Employment *</Label><Input type="date" value={form.assistedStartDate} onChange={e => update("assistedStartDate", e.target.value)} className="mt-1" /></div>
+              <div><Label>End Date of Employment *</Label><Input type="date" value={form.assistedEndDate} onChange={e => update("assistedEndDate", e.target.value)} className="mt-1" /></div>
+            </div>
+
             <div>
               <Label>Signed Offer Letter *</Label>
-              <div className="mt-1 border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/30 transition-colors cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">Click to upload or drag & drop</p>
+              <p className="text-xs text-muted-foreground mb-2">Must include job title, hours, and pay rate.</p>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/30 transition-colors cursor-pointer group">
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2 group-hover:text-primary transition-colors" />
+                <p className="text-sm font-medium">Click to upload or drag & drop</p>
                 <p className="text-xs text-muted-foreground">PDF, DOC up to 10MB</p>
               </div>
             </div>
-            <div><Label>Notes (optional)</Label><Textarea value={form.assistedNotes} onChange={e => update("assistedNotes", e.target.value)} className="mt-1" rows={3} /></div>
+            <div><Label>Additional Notes (optional)</Label><Textarea value={form.assistedNotes} onChange={e => update("assistedNotes", e.target.value)} className="mt-1" rows={3} placeholder="Any specific requirements or instructions for the caseworker..." /></div>
           </div>
-          <NavButtons canNext={!!form.assistedName} />
+          <NavButtons canNext={!!(form.assistedName && form.assistedJobTitle && form.assistedPhone && form.assistedEmail && form.assistedHours && form.assistedPayRate && form.assistedStartDate && form.assistedEndDate)} />
         </div>
       );
     }
@@ -235,48 +257,75 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
   }
 
   if (step === 2) {
-    const countries = DEMO_COUNTRIES.map(c => ({ value: c.name, label: c.name }));
+    const countries = COUNTRIES.map(c => ({ value: c.name, label: c.name }));
     return (
       <div className="max-w-2xl">
         <h1 className="text-xl font-bold mb-1">Candidate Personal Information</h1>
         <StepIndicator />
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div><Label>Family Name *</Label><Input value={form.familyName} onChange={e => update("familyName", e.target.value)} className="mt-1" /></div>
-            <div><Label>Given Name *</Label><Input value={form.givenName} onChange={e => update("givenName", e.target.value)} className="mt-1" /></div>
+            <div><Label>Given Name(s) *</Label><Input value={form.givenName} onChange={e => update("givenName", e.target.value)} className="mt-1" /></div>
             <div><Label>Other Names</Label><Input value={form.otherNames} onChange={e => update("otherNames", e.target.value)} className="mt-1" /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Nationality *</Label><div className="mt-1"><SearchableSelect value={form.nationality} onChange={v => update("nationality", v)} options={countries} placeholder="Select country…" /></div></div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Sex of Worker *</Label>
+              <Select value={form.sex} onValueChange={v => update("sex", v)}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select sex..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Date of Birth *</Label><Input type="date" value={form.dob} onChange={e => update("dob", e.target.value)} className="mt-1" /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Country of Birth</Label><div className="mt-1"><SearchableSelect value={form.countryOfBirth} onChange={v => update("countryOfBirth", v)} options={countries} placeholder="Select…" /></div></div>
-            <div><Label>Place of Birth</Label><Input value={form.placeOfBirth} onChange={e => update("placeOfBirth", e.target.value)} className="mt-1" /></div>
-          </div>
-          <div className="border-t pt-3">
-            <p className="text-sm font-semibold mb-3">Passport Details</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Passport Number *</Label><Input value={form.passportNumber} onChange={e => update("passportNumber", e.target.value)} className="mt-1" /></div>
-              <div><Label>Country of Residence</Label><div className="mt-1"><SearchableSelect value={form.countryOfResidence} onChange={v => update("countryOfResidence", v)} options={countries} placeholder="Select…" /></div></div>
-              <div><Label>Issue Date</Label><Input type="date" value={form.passportIssue} onChange={e => update("passportIssue", e.target.value)} className="mt-1" /></div>
-              <div><Label>Expiry Date</Label><Input type="date" value={form.passportExpiry} onChange={e => update("passportExpiry", e.target.value)} className="mt-1" /></div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Nationality *</Label>
+              <div className="mt-1"><SearchableSelect value={form.nationality} onChange={v => update("nationality", v)} options={countries} placeholder="Search countries..." /></div>
+            </div>
+            <div>
+              <Label>Country of Birth *</Label>
+              <div className="mt-1"><SearchableSelect value={form.countryOfBirth} onChange={v => update("countryOfBirth", v)} options={countries} placeholder="Search countries..." /></div>
             </div>
           </div>
-          <div className="border-t pt-3">
-            <p className="text-sm font-semibold mb-3">Current Home Address</p>
+          <div><Label>Place of Birth *</Label><Input value={form.placeOfBirth} onChange={e => update("placeOfBirth", e.target.value)} className="mt-1" /></div>
+
+          <div className="border-t pt-3 mt-4">
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2"><FileText className="h-4 w-4" />Passport Details</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div><Label>Passport Number *</Label><Input value={form.passportNumber} onChange={e => update("passportNumber", e.target.value)} className="mt-1" /></div>
+              <div>
+                <Label>Country of Residence *</Label>
+                <div className="mt-1"><SearchableSelect value={form.countryOfResidence} onChange={v => update("countryOfResidence", v)} options={countries} placeholder="Search countries..." /></div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div><Label>Place of Issue *</Label><Input value={form.passportPlaceOfIssue} onChange={e => update("passportPlaceOfIssue", e.target.value)} className="mt-1" placeholder="e.g. London" /></div>
+              <div><Label>Issue Date *</Label><Input type="date" value={form.passportIssue} onChange={e => update("passportIssue", e.target.value)} className="mt-1" /></div>
+              <div><Label>Expiry Date *</Label><Input type="date" value={form.passportExpiry} onChange={e => update("passportExpiry", e.target.value)} className="mt-1" /></div>
+            </div>
+          </div>
+
+          <div className="border-t pt-3 mt-4">
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2"><User className="h-4 w-4" />Current Home Address</p>
             <div className="space-y-2">
-              <Input placeholder="Address line 1" value={form.address1} onChange={e => update("address1", e.target.value)} />
+              <Input placeholder="Address line 1 *" value={form.address1} onChange={e => update("address1", e.target.value)} />
               <Input placeholder="Address line 2" value={form.address2} onChange={e => update("address2", e.target.value)} />
               <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="City/Town" value={form.city} onChange={e => update("city", e.target.value)} />
+                <Input placeholder="City/Town *" value={form.city} onChange={e => update("city", e.target.value)} />
                 <Input placeholder="County" value={form.county} onChange={e => update("county", e.target.value)} />
-                <Input placeholder="Postcode" value={form.postcode} onChange={e => update("postcode", e.target.value)} />
+                <Input placeholder="Postcode *" value={form.postcode} onChange={e => update("postcode", e.target.value)} />
               </div>
-              <SearchableSelect value={form.country} onChange={v => update("country", v)} options={countries} placeholder="Country…" />
+              <SearchableSelect value={form.country} onChange={v => update("country", v)} options={countries} placeholder="Country *" />
             </div>
           </div>
-          <div className="border-t pt-3">
+          <div className="border-t pt-3 mt-4">
             <p className="text-sm font-semibold mb-3">Identification Numbers (optional)</p>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>NI Number</Label><Input value={form.niNumber} onChange={e => update("niNumber", e.target.value)} className="mt-1" /></div>
@@ -284,7 +333,7 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
             </div>
           </div>
         </div>
-        <NavButtons canNext={!!(form.familyName && form.givenName && form.nationality && form.dob)} />
+        <NavButtons canNext={!!(form.familyName && form.givenName && form.sex && form.dob && form.nationality && form.passportNumber && form.countryOfResidence && form.passportPlaceOfIssue && form.passportIssue && form.passportExpiry && form.address1 && form.city && form.postcode && form.country)} />
       </div>
     );
   }
@@ -447,10 +496,28 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
 
   // Invoice step
   if (step === 6 || (path === "assisted" && step === 2)) {
+    if (paymentConfirmed) {
+      return (
+        <div className="max-w-2xl text-center py-12">
+          <div className="h-16 w-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="h-10 w-10" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Request Submitted Successfully!</h1>
+          <p className="text-muted-foreground mb-8 text-sm">
+            {paymentChoice === "now" 
+              ? "Your payment has been processed and your case is now with our caseworkers for review."
+              : "Your request has been received. An invoice has been generated and sent to your email. Please ensure payment is made within 30 days."}
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button onClick={onComplete}>Go to Sponsorship Dashboard</Button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="max-w-2xl">
-        <h1 className="text-xl font-bold mb-1">Invoice Summary</h1>
-        <p className="text-sm text-muted-foreground mb-4">Review fees before submitting to Screem</p>
+        <h1 className="text-xl font-bold mb-1">Fee Breakdown & Payment</h1>
+        <p className="text-sm text-muted-foreground mb-4">Review Home Office charges and choose your payment method.</p>
         <StepIndicator />
         <div className="rounded-xl border bg-card overflow-hidden mb-4">
           <div className="p-4 border-b bg-muted/30">
@@ -490,15 +557,61 @@ export default function CosWizard({ onComplete }: CosWizardProps) {
             </div>
           </div>
         </div>
-        <div className="rounded-lg bg-warning-light border border-warning/20 p-3 text-sm text-warning mb-4">
-          ⚠ Payment is required before this case will be reviewed by Screem.
-        </div>
+        {!paymentChoice ? (
+          <div className="space-y-4 mb-6">
+            <p className="text-sm font-semibold mb-3">Choose Payment Option</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => setPaymentChoice("now")}
+                className="flex flex-col items-center p-6 border-2 rounded-xl hover:border-primary hover:bg-primary/5 transition-all text-center group"
+              >
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <CreditCard className="h-6 w-6 text-primary" />
+                </div>
+                <p className="font-bold mb-1 text-sm">Make Payment Now</p>
+                <p className="text-xs text-muted-foreground">Secure payment via Stripe</p>
+              </button>
+              <button
+                onClick={() => setPaymentChoice("later")}
+                className="flex flex-col items-center p-6 border-2 rounded-xl hover:border-secondary hover:bg-secondary/5 transition-all text-center group"
+              >
+                <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Receipt className="h-6 w-6 text-secondary" />
+                </div>
+                <p className="font-bold mb-1 text-sm">Make Payment in 30 Days</p>
+                <p className="text-xs text-muted-foreground">Generate invoice for bank transfer</p>
+              </button>
+            </div>
+          </div>
+        ) : paymentChoice === "now" ? (
+          <div className="mb-6 p-8 border-2 border-primary/20 rounded-xl bg-primary/5 text-center">
+            <CreditCard className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">Secure Online Payment</h3>
+            <p className="text-sm text-muted-foreground mb-6">Clicking the button below will open our secure Stripe payment portal.</p>
+            <Button className="w-full bg-[#635BFF] hover:bg-[#5851E0] text-white py-4 text-base h-auto" onClick={() => setPaymentConfirmed(true)}>
+              Pay £{total.toLocaleString()} with Stripe
+            </Button>
+            <button className="text-xs text-muted-foreground mt-4 hover:underline" onClick={() => setPaymentChoice(null)}>Change payment method</button>
+          </div>
+        ) : (
+          <div className="mb-6 p-8 border-2 border-secondary/20 rounded-xl bg-secondary/5 text-center">
+            <Receipt className="h-12 w-12 text-secondary mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">Invoice Selection</h3>
+            <p className="text-sm text-muted-foreground mb-6">We will generate an invoice for £{total.toLocaleString()} and send it to your registered email address.</p>
+            <div className="bg-white/50 p-4 rounded-lg text-left text-sm mb-6 border divide-y">
+              <div className="flex justify-between py-1"><span>Due Date:</span><span className="font-medium">In 30 Days</span></div>
+              <div className="flex justify-between py-1"><span>Payment Method:</span><span className="font-medium">Bank Transfer</span></div>
+            </div>
+            <Button variant="secondary" className="w-full py-4 text-base h-auto" onClick={() => setPaymentConfirmed(true)}>
+              Confirm & Generate Invoice
+            </Button>
+            <button className="text-xs text-muted-foreground mt-4 hover:underline" onClick={() => setPaymentChoice(null)}>Change payment method</button>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={() => setStep(s => s - 1)}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Back
-          </Button>
-          <Button className="flex-1" onClick={onComplete}>
-            Submit Case & Generate Invoice
           </Button>
         </div>
       </div>
