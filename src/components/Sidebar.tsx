@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Award, FileText, Users, InboxIcon,
+  LayoutDashboard, Award, Users, InboxIcon,
   Settings, ShieldCheck, Building2, UserPlus, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
