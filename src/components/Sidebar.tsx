@@ -9,7 +9,6 @@ import { useApp } from "@/context/AppContext";
 const clientNav = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Sponsorship", href: "/sponsorship", icon: Award },
-  { label: "Reporting", href: "/reporting", icon: FileText },
   { label: "People", href: "/people", icon: Users },
   { label: "Recruitment", href: "/recruitment", icon: UserPlus },
   { label: "Requests", href: "/requests", icon: InboxIcon },
@@ -20,7 +19,6 @@ const clientNav = [
 const internalNav = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Sponsorship", href: "/sponsorship", icon: Award },
-  { label: "Reporting", href: "/reporting", icon: FileText },
   { label: "People", href: "/people", icon: Users },
   { label: "Recruitment", href: "/recruitment", icon: UserPlus },
   { label: "Requests", href: "/requests", icon: InboxIcon },

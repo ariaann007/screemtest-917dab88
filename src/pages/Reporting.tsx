@@ -25,9 +25,11 @@ const STOP_REASONS = [
 ];
 const CHANGE_TYPES = ["Work location changed", "Job title/duties changed", "Salary/hours changed"];
 
-export default function ReportingPage() {
+export default function ReportingPage({ initialView }: { initialView?: "migrant" | "business" }) {
   const { currentTenant } = useApp();
-  const [view, setView] = useState<"landing" | "migrant" | "business" | "worker_select" | "form">("landing");
+  const [view, setView] = useState<"landing" | "migrant" | "business" | "worker_select" | "form">(
+    initialView === "migrant" ? "worker_select" : initialView === "business" ? "business" : "landing"
+  );
   const [reportType, setReportType] = useState("");
   const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
   const [workerSearch, setWorkerSearch] = useState("");
