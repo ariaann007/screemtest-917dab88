@@ -32,7 +32,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   return <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 pb-2 border-b">{children}</h4>;
 }
 
-function PersonalDetailsTab({ worker }: { worker: ReturnType<typeof DEMO_WORKERS[0]["id"] extends string ? typeof DEMO_WORKERS[number] : never> }) {
+function PersonalDetailsTab({ worker }: { worker: typeof DEMO_WORKERS[number] }) {
   return (
     <div className="space-y-6">
       <div>
