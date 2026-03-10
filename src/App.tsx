@@ -8,11 +8,17 @@ import { AppLayout } from "@/components/AppLayout";
 import DashboardPage from "@/pages/Dashboard";
 import SponsorshipPage from "@/pages/Sponsorship";
 import PeoplePage from "@/pages/People";
+import EmployeeProfile from "@/pages/EmployeeProfile";
 import RequestsPage from "@/pages/Requests";
 import RecruitmentPage from "@/pages/Recruitment";
 import SettingsPage from "@/pages/Settings";
 import AdminPage from "@/pages/Admin";
 import LeaveManagementPage from "@/pages/LeaveManagement";
+import OnboardingPage from "@/pages/Onboarding";
+import TimePage from "@/pages/Time";
+import PayrollPage from "@/pages/Payroll";
+import PerformancePage from "@/pages/Performance";
+import OrganisationPage from "@/pages/Organisation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,9 +36,15 @@ const App = () => (
               <Route path="/sponsorship" element={<SponsorshipPage />} />
               <Route path="/sponsorship/:id" element={<SponsorshipPage />} />
               <Route path="/people" element={<PeoplePage />} />
+              <Route path="/people/:id" element={<EmployeeProfile />} />
               <Route path="/requests" element={<RequestsPage />} />
               <Route path="/recruitment" element={<RecruitmentPage />} />
               <Route path="/leave" element={<LeaveManagementPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/time" element={<TimePage />} />
+              <Route path="/payroll" element={<PayrollPage />} />
+              <Route path="/performance" element={<PerformancePage />} />
+              <Route path="/organisation" element={<OrganisationPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
