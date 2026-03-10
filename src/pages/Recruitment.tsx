@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -446,10 +448,17 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
               {APP_STATUS_LABELS[app.status]}
             </span>
             {(app.status === "offered" || status === "offered") && !movedToPeople && (
-              <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-success border-success/30 hover:bg-success/10" onClick={handleMoveToPeople}>
-                <UserCheck className="h-3.5 w-3.5" />
-                Add to Live Workers
-              </Button>
+              <>
+                <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-primary border-primary/30 hover:bg-primary/10"
+                  onClick={() => { window.location.href = "/onboarding"; }}>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                  Start Onboarding
+                </Button>
+                <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-success border-success/30 hover:bg-success/10" onClick={handleMoveToPeople}>
+                  <UserCheck className="h-3.5 w-3.5" />
+                  Add to Live Workers
+                </Button>
+              </>
             )}
             {movedToPeople && (
               <span className="text-xs text-success flex items-center gap-1">
