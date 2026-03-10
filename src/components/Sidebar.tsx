@@ -2,29 +2,36 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Award, Users, InboxIcon,
   Settings, ShieldCheck, Building2, UserPlus, CalendarDays,
+  Clock, DollarSign, TrendingUp, Briefcase, Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
 
 const clientNav = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Sponsorship", href: "/sponsorship", icon: Award },
-  { label: "People", href: "/people", icon: Users },
-  { label: "Recruitment", href: "/recruitment", icon: UserPlus },
-  { label: "Requests", href: "/requests", icon: InboxIcon },
-  { label: "Leave", href: "/leave", icon: CalendarDays },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Dashboard",         href: "/",              icon: LayoutDashboard },
+  { label: "Recruitment",       href: "/recruitment",   icon: UserPlus },
+  { label: "Onboarding",        href: "/onboarding",    icon: Briefcase },
+  { label: "People",            href: "/people",        icon: Users },
+  { label: "Time",              href: "/time",          icon: Clock },
+  { label: "Payroll",           href: "/payroll",       icon: DollarSign },
+  { label: "Performance",       href: "/performance",   icon: TrendingUp },
+  { label: "Sponsorship",       href: "/sponsorship",   icon: Award },
+  { label: "Organisation",      href: "/organisation",  icon: Network },
+  { label: "Settings",          href: "/settings",      icon: Settings },
 ];
 
 const internalNav = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Sponsorship", href: "/sponsorship", icon: Award },
-  { label: "People", href: "/people", icon: Users },
-  { label: "Recruitment", href: "/recruitment", icon: UserPlus },
-  { label: "Requests", href: "/requests", icon: InboxIcon },
-  { label: "Leave", href: "/leave", icon: CalendarDays },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Admin", href: "/admin", icon: ShieldCheck },
+  { label: "Dashboard",         href: "/",              icon: LayoutDashboard },
+  { label: "Recruitment",       href: "/recruitment",   icon: UserPlus },
+  { label: "Onboarding",        href: "/onboarding",    icon: Briefcase },
+  { label: "People",            href: "/people",        icon: Users },
+  { label: "Time",              href: "/time",          icon: Clock },
+  { label: "Payroll",           href: "/payroll",       icon: DollarSign },
+  { label: "Performance",       href: "/performance",   icon: TrendingUp },
+  { label: "Sponsorship",       href: "/sponsorship",   icon: Award },
+  { label: "Organisation",      href: "/organisation",  icon: Network },
+  { label: "Settings",          href: "/settings",      icon: Settings },
+  { label: "Admin",             href: "/admin",         icon: ShieldCheck },
 ];
 
 export function Sidebar() {
@@ -34,9 +41,9 @@ export function Sidebar() {
   const navItems = isInternal ? internalNav : clientNav;
 
   return (
-    <aside className="w-60 shrink-0 flex flex-col h-full" style={{ background: "var(--gradient-hero)" }}>
+    <aside className="w-56 shrink-0 flex flex-col h-full" style={{ background: "var(--gradient-hero)" }}>
       {/* Logo */}
-      <div className="h-14 flex items-center px-5 border-b border-sidebar-border shrink-0">
+      <div className="h-14 flex items-center px-4 border-b border-sidebar-border shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: "hsl(267 80% 57%)" }}>
             <span className="text-white font-black text-xs tracking-tighter">SC</span>
@@ -88,7 +95,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3">
+      <nav className="flex-1 overflow-y-auto py-2 px-2">
         <ul className="space-y-0.5">
           {navItems.map(item => {
             const active = item.href === "/" ? location.pathname === "/" : location.pathname.startsWith(item.href);
@@ -97,13 +104,13 @@ export function Sidebar() {
                 <Link
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors",
                     active
                       ? "bg-sidebar-primary text-sidebar-primary-foreground"
                       : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className="h-3.5 w-3.5 shrink-0" />
                   {item.label}
                   {item.label === "Admin" && (
                     <span className="ml-auto text-[10px] bg-secondary/20 text-secondary rounded px-1">INT</span>
@@ -117,7 +124,7 @@ export function Sidebar() {
 
       {/* User foot */}
       <div className="p-3 border-t border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-1">
+        <div className="flex items-center gap-2 px-1 py-1">
           <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-white text-xs font-bold shrink-0">
             {currentUser.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
           </div>
