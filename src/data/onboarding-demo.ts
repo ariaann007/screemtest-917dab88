@@ -1,5 +1,6 @@
 import { OnboardingCase, OnboardingTemplate } from "@/types/onboarding";
 
+
 export const DEMO_ONBOARDING_CASES: OnboardingCase[] = [
   {
     id: "ob1",
