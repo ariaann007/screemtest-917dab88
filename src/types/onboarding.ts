@@ -6,6 +6,7 @@ export type WorkerType =
   | "non_sponsored_visa"
   | "student_visa"
   | "sponsored_worker"
+  | "requires_sponsorship"
   | "custom";
 
 export type OnboardingStatus =
@@ -108,6 +109,98 @@ export interface OnboardingActivityLog {
   notes?: string;
 }
 
+// ── New types ────────────────────────────────────────────────────────────────
+
+export interface EmploymentHistoryEntry {
+  id: string;
+  employerName: string;
+  jobTitle: string;
+  employmentType?: string;
+  startDate: string;
+  endDate?: string;       // empty = current
+  workplaceLocation?: string;
+  mainDuties?: string;
+  reasonForLeaving?: string;
+}
+
+export interface EmploymentGap {
+  id: string;
+  fromDate: string;
+  toDate: string;
+  reason?: string;  // study | unemployment | caring | travel | medical | other
+  explanation?: string;
+}
+
+export interface NextOfKin {
+  fullName: string;
+  relationship: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+export interface ImmigrationStatusInfo {
+  workerCategory: WorkerType;
+  currentStatus?: string;
+  visaType?: string;
+  visaExpiryDate?: string;
+  rightToWorkShareCode?: string;
+  workRestrictions?: string;
+  requiresSponsorship?: boolean;
+  isCurrentlyStudying?: boolean;
+  academicTermDates?: string;
+  vacationDates?: string;
+  cosReference?: string;
+  niNumber?: string;
+}
+
+export interface AdditionalDocRequest {
+  id: string;
+  title: string;
+  instructions?: string;
+  mandatory: boolean;
+  dueDate?: string;
+  assignedTo?: string;
+  status: "pending" | "uploaded" | "approved" | "rejected";
+  requestedBy: string;
+  requestedAt: string;
+  fileName?: string;
+  uploadedAt?: string;
+}
+
+// ── Personal & Employment details ─────────────────────────────────────────────
+
+export interface PersonalDetails {
+  fullLegalName?: string;
+  preferredName?: string;
+  personalEmail?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  passportNumber?: string;
+  nationalInsuranceNumber?: string;
+  homeAddress?: string;
+  postcode?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+}
+
+export interface EmploymentDetails {
+  jobTitle?: string;
+  department?: string;
+  location?: string;
+  manager?: string;
+  employmentType?: string;
+  contractedHours?: string;
+  workPattern?: string;
+  shiftType?: string;
+  salaryOrRate?: string;
+  proposedStartDate?: string;
+  managerVerified?: boolean;
+}
+
+// ── Full onboarding case ───────────────────────────────────────────────────────
+
 export interface OnboardingCase {
   id: string;
   tenantId: string;
@@ -154,6 +247,15 @@ export interface OnboardingCase {
   handbookAcknowledged?: boolean;
   policyAcknowledged?: boolean;
   confidentialityAgreed?: boolean;
+  // ── New structured data ────────────────────────────────────────────────────
+  personalDetails?: PersonalDetails;
+  employmentDetails?: EmploymentDetails;
+  employmentHistory?: EmploymentHistoryEntry[];
+  employmentGaps?: EmploymentGap[];
+  primaryNextOfKin?: NextOfKin;
+  secondaryNextOfKin?: NextOfKin;
+  immigrationStatus?: ImmigrationStatusInfo;
+  additionalDocRequests?: AdditionalDocRequest[];
   // Collections
   documents: OnboardingDocument[];
   checks: OnboardingCheck[];
@@ -167,6 +269,9 @@ export interface OnboardingCase {
   completedAt?: string;
   movedToPeopleAt?: string;
   workerId?: string; // set when moved to People
+  // Invitation
+  invitationSentAt?: string;
+  candidateJoinedAt?: string;
 }
 
 export interface OnboardingTemplate {
