@@ -42,6 +42,7 @@ const WORKER_TYPE_COLORS: Record<WorkerType, string> = {
   non_sponsored_visa: "bg-warning/10 text-warning border-warning/20",
   student_visa: "bg-primary/10 text-primary border-primary/20",
   sponsored_worker: "bg-secondary/10 text-secondary border-secondary/20",
+  requires_sponsorship: "bg-destructive/10 text-destructive border-destructive/20",
   custom: "bg-muted text-muted-foreground border-border",
 };
 
