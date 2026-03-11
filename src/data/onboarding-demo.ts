@@ -131,7 +131,8 @@ export const DEMO_ONBOARDING_CASES: OnboardingCase[] = [
     invitationSentAt: "2026-02-27T09:10:00Z",
     candidateJoinedAt: "2026-02-27T14:22:00Z",
 
-    confidentialityAgreed: false,
+
+
     documents: [
       { id: "d1", name: "Passport", category: "Identity Documents", mandatory: true, verificationStatus: "verified", uploadedAt: "2026-03-01T09:00:00Z", uploadedBy: "Mark Thompson", fileName: "Lakshmi_Passport.pdf", fileSize: 312000 },
       { id: "d2", name: "Right to Work Evidence", category: "Right to Work", mandatory: true, verificationStatus: "verified", uploadedAt: "2026-03-01T09:15:00Z", uploadedBy: "Mark Thompson", fileName: "Lakshmi_RTW.pdf", fileSize: 184000 },
