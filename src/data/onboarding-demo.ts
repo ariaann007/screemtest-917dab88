@@ -355,7 +355,7 @@ export const DEMO_ONBOARDING_CASES: OnboardingCase[] = [
     ],
     invitationSentAt: "2026-03-01T10:05:00Z",
     candidateJoinedAt: "2026-03-02T08:45:00Z",
-
+    documents: [
       { id: "d20", name: "Passport", category: "Identity Documents", mandatory: true, verificationStatus: "verified", uploadedAt: "2026-03-02T11:00:00Z", uploadedBy: "Mark Thompson", fileName: "Priya_Passport.pdf" },
       { id: "d21", name: "Current BRP / eVisa", category: "Immigration Documents", mandatory: true, verificationStatus: "pending", uploadedAt: "2026-03-02T11:05:00Z", uploadedBy: "Mark Thompson" },
       { id: "d22", name: "Right to Work Share Code", category: "Right to Work", mandatory: true, verificationStatus: "not_uploaded" },
@@ -366,6 +366,7 @@ export const DEMO_ONBOARDING_CASES: OnboardingCase[] = [
       { id: "d27", name: "DBS Certificate", category: "Background Check Documents", mandatory: true, verificationStatus: "not_uploaded" },
       { id: "d28", name: "Bank Details Form", category: "Payroll Documents", mandatory: true, verificationStatus: "not_uploaded" },
     ],
+
     checks: [
       { id: "c20", name: "Right to Work Check", category: "Compliance", status: "pending", mandatory: true, dueDate: "2026-03-15", assignedTo: "Mark Thompson", evidenceUploaded: false },
       { id: "c21", name: "Identity Verification", category: "Compliance", status: "approved", mandatory: true, completedAt: "2026-03-02T12:00:00Z", completedBy: "Mark Thompson", evidenceUploaded: true },
