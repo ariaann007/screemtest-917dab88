@@ -32,6 +32,7 @@ const WORKER_TYPE_LABELS: Record<WorkerType, string> = {
   non_sponsored_visa: "Non-Sponsored Visa",
   student_visa: "Student Visa",
   sponsored_worker: "Sponsored Worker",
+  requires_sponsorship: "Requires Sponsorship",
   custom: "Custom",
 };
 
