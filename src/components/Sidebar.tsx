@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Award, Users, InboxIcon,
-  Settings, ShieldCheck, Building2, UserPlus, CalendarDays,
-  Clock, DollarSign, TrendingUp, Briefcase, Network,
+  LayoutDashboard, Award, Users,
+  Settings, ShieldCheck, Building2, UserPlus,
+  Clock, DollarSign, TrendingUp, Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
