@@ -24,7 +24,18 @@ import { OnboardingStatus, WorkerType } from "@/types/onboarding";
 // ── Types ──────────────────────────────────────────────────────────────────────
 type ContractType = "full_time" | "part_time" | "contract" | "bank";
 type VacancyStatus = "open" | "closed" | "draft";
-type ApplicationStatus = "new" | "shortlisted" | "interview" | "offered" | "rejected";
+type ApplicationStatus =
+  | "new"
+  | "shortlisted"
+  | "interview_scheduled"
+  | "interview_completed"
+  | "offered"
+  | "offer_accepted"
+  | "onboarding"
+  | "ready_to_start"
+  | "transferred"
+  | "rejected"
+  | "withdrawn";
 
 interface Vacancy {
   id: string;
