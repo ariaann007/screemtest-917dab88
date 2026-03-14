@@ -171,7 +171,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     email: "maria.kowalski@email.com", phone: "07633 445566", nationality: "Polish",
     rightToWork: "yes_unrestricted", coverLetter: "I have been living in the UK for 5 years and have volunteered at a local care home. I am kind, patient, and eager to start a career in care.",
     cvFileName: "Maria_Kowalski_CV.pdf", cvFileSize: 145000,
-    status: "interview", submittedAt: "2026-02-23T10:00:00Z",
+    status: "interview_scheduled", submittedAt: "2026-02-23T10:00:00Z",
     interviewNotes: "Warm personality. No formal care experience but strong volunteering background. Interview scheduled for 3 March.",
     interviewDate: "2026-03-03", interviewerName: "Helen Clarke",
   },
