@@ -644,7 +644,7 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
   };
 
   // pipeline funnel counts
-  const stages: ApplicationStatus[] = ["new", "shortlisted", "interview", "offered", "rejected"];
+  const stages: ApplicationStatus[] = ["new", "shortlisted", "interview_scheduled", "interview_completed", "offered", "offer_accepted", "onboarding", "ready_to_start", "rejected"];
 
   return (
     <div className="space-y-5 animate-fade-in">
