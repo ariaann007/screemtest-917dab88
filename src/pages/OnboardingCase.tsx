@@ -1411,9 +1411,9 @@ export default function OnboardingCaseProfile() {
 
   return (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/onboarding")} className="-ml-2">
+      <Button variant="ghost" size="sm" onClick={() => navigate("/recruitment")} className="-ml-2">
         <ArrowLeft className="h-4 w-4 mr-1.5" />
-        Back to Onboarding
+        Back to Recruitment
       </Button>
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
