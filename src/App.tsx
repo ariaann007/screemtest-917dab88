@@ -14,7 +14,6 @@ import RecruitmentPage from "@/pages/Recruitment";
 import SettingsPage from "@/pages/Settings";
 import AdminPage from "@/pages/Admin";
 import LeaveManagementPage from "@/pages/LeaveManagement";
-import OnboardingPage from "@/pages/Onboarding";
 import OnboardingCasePage from "@/pages/OnboardingCase";
 import TimePage from "@/pages/Time";
 import PayrollPage from "@/pages/Payroll";
