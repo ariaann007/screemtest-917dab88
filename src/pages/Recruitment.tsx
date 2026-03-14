@@ -564,7 +564,7 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
           </div>
 
           {/* Interview Details */}
-          {(status === "interview" || status === "shortlisted" || status === "offered" || interviewDate) && (
+          {(status === "interview_scheduled" || status === "interview_completed" || status === "shortlisted" || status === "offered" || interviewDate) && (
             <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
               <h4 className="text-sm font-semibold flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />Interview Details
