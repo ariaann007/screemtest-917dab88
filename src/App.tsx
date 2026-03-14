@@ -14,7 +14,6 @@ import RecruitmentPage from "@/pages/Recruitment";
 import SettingsPage from "@/pages/Settings";
 import AdminPage from "@/pages/Admin";
 import LeaveManagementPage from "@/pages/LeaveManagement";
-import OnboardingPage from "@/pages/Onboarding";
 import OnboardingCasePage from "@/pages/OnboardingCase";
 import TimePage from "@/pages/Time";
 import PayrollPage from "@/pages/Payroll";
@@ -41,8 +40,7 @@ const App = () => (
               <Route path="/requests" element={<RequestsPage />} />
               <Route path="/recruitment" element={<RecruitmentPage />} />
               <Route path="/leave" element={<LeaveManagementPage />} />
-              <Route path="/onboarding" element={<OnboardingPage />} />
-              <Route path="/onboarding/:id" element={<OnboardingCasePage />} />
+              <Route path="/recruitment/onboarding/:id" element={<OnboardingCasePage />} />
               <Route path="/time" element={<TimePage />} />
               <Route path="/payroll" element={<PayrollPage />} />
               <Route path="/performance" element={<PerformancePage />} />

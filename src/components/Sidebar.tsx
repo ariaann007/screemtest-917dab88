@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Award, Users, InboxIcon,
-  Settings, ShieldCheck, Building2, UserPlus, CalendarDays,
-  Clock, DollarSign, TrendingUp, Briefcase, Network,
+  LayoutDashboard, Award, Users,
+  Settings, ShieldCheck, Building2, UserPlus,
+  Clock, DollarSign, TrendingUp, Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
@@ -10,7 +10,6 @@ import { useApp } from "@/context/AppContext";
 const clientNav = [
   { label: "Dashboard",         href: "/",              icon: LayoutDashboard },
   { label: "Recruitment",       href: "/recruitment",   icon: UserPlus },
-  { label: "Onboarding",        href: "/onboarding",    icon: Briefcase },
   { label: "People",            href: "/people",        icon: Users },
   { label: "Time",              href: "/time",          icon: Clock },
   { label: "Payroll",           href: "/payroll",       icon: DollarSign },
@@ -23,7 +22,6 @@ const clientNav = [
 const internalNav = [
   { label: "Dashboard",         href: "/",              icon: LayoutDashboard },
   { label: "Recruitment",       href: "/recruitment",   icon: UserPlus },
-  { label: "Onboarding",        href: "/onboarding",    icon: Briefcase },
   { label: "People",            href: "/people",        icon: Users },
   { label: "Time",              href: "/time",          icon: Clock },
   { label: "Payroll",           href: "/payroll",       icon: DollarSign },

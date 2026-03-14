@@ -7,18 +7,35 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   Plus, X, Briefcase, MapPin, Clock, Users, ChevronRight,
   CheckCircle2, FileText, ArrowLeft, Search, Upload, MessageSquare,
   XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp,
+  ArrowRight, Shield, UserPlus, AlertTriangle, FileX, PauseCircle, Star,
+  History, ClipboardCheck, Send,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { DEMO_ONBOARDING_CASES } from "@/data/onboarding-demo";
+import { OnboardingStatus, WorkerType } from "@/types/onboarding";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type ContractType = "full_time" | "part_time" | "contract" | "bank";
 type VacancyStatus = "open" | "closed" | "draft";
-type ApplicationStatus = "new" | "shortlisted" | "interview" | "offered" | "rejected";
+type ApplicationStatus =
+  | "new"
+  | "shortlisted"
+  | "interview_scheduled"
+  | "interview_completed"
+  | "offered"
+  | "offer_accepted"
+  | "onboarding"
+  | "ready_to_start"
+  | "transferred"
+  | "rejected"
+  | "withdrawn";
 
 interface Vacancy {
   id: string;
@@ -102,7 +119,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     email: "james.okafor@email.com", phone: "07891 234567", nationality: "British",
     rightToWork: "yes_unrestricted", coverLetter: "Born and raised in Birmingham, I have worked in care since leaving college. I have my NVQ Level 3 and completed a leadership course last year. I am eager to take on a senior role.",
     cvFileName: "James_Okafor_CV.docx", cvFileSize: 189000,
-    status: "interview", submittedAt: "2026-02-13T14:00:00Z",
+    status: "interview_scheduled", submittedAt: "2026-02-13T14:00:00Z",
     interviewNotes: "Interview held on 20 Feb. Performed well on scenario-based questions. Awaiting second interview slot confirmation.",
     interviewDate: "2026-02-20", interviewerName: "Sarah Mitchell",
   },
@@ -154,7 +171,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     email: "maria.kowalski@email.com", phone: "07633 445566", nationality: "Polish",
     rightToWork: "yes_unrestricted", coverLetter: "I have been living in the UK for 5 years and have volunteered at a local care home. I am kind, patient, and eager to start a career in care.",
     cvFileName: "Maria_Kowalski_CV.pdf", cvFileSize: 145000,
-    status: "interview", submittedAt: "2026-02-23T10:00:00Z",
+    status: "interview_scheduled", submittedAt: "2026-02-23T10:00:00Z",
     interviewNotes: "Warm personality. No formal care experience but strong volunteering background. Interview scheduled for 3 March.",
     interviewDate: "2026-03-03", interviewerName: "Helen Clarke",
   },
@@ -172,15 +189,31 @@ const CONTRACT_LABELS: Record<ContractType, string> = {
 };
 
 const APP_STATUS_LABELS: Record<ApplicationStatus, string> = {
-  new: "New", shortlisted: "Shortlisted", interview: "Interview", offered: "Offered", rejected: "Rejected",
+  new: "New",
+  shortlisted: "Shortlisted",
+  interview_scheduled: "Interview Scheduled",
+  interview_completed: "Interview Completed",
+  offered: "Offered",
+  offer_accepted: "Offer Accepted",
+  onboarding: "Onboarding",
+  ready_to_start: "Ready to Start",
+  transferred: "Transferred",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
 };
 
 const APP_STATUS_COLORS: Record<ApplicationStatus, string> = {
   new: "bg-primary/10 text-primary border-primary/20",
   shortlisted: "bg-warning/10 text-warning border-warning/20",
-  interview: "bg-secondary/10 text-secondary border-secondary/20",
+  interview_scheduled: "bg-secondary/10 text-secondary border-secondary/20",
+  interview_completed: "bg-secondary/10 text-secondary border-secondary/20",
   offered: "bg-success/10 text-success border-success/20",
+  offer_accepted: "bg-success/10 text-success border-success/20",
+  onboarding: "bg-primary/10 text-primary border-primary/20",
+  ready_to_start: "bg-success/10 text-success border-success/20",
+  transferred: "bg-muted text-muted-foreground border-border",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
+  withdrawn: "bg-muted text-muted-foreground border-border",
 };
 
 // Candidate required documents
@@ -447,12 +480,12 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", APP_STATUS_COLORS[app.status])}>
               {APP_STATUS_LABELS[app.status]}
             </span>
-            {(app.status === "offered" || status === "offered") && !movedToPeople && (
+            {(["offered", "offer_accepted"].includes(app.status) || ["offered", "offer_accepted"].includes(status)) && !movedToPeople && (
               <>
                 <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-primary border-primary/30 hover:bg-primary/10"
-                  onClick={() => { window.location.href = "/onboarding"; }}>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                  Start Onboarding
+                  onClick={() => { onUpdate(app.id, { status: "onboarding" }); onClose(); }}>
+                  <ClipboardCheck className="h-3.5 w-3.5" />
+                  Move to Onboarding
                 </Button>
                 <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-success border-success/30 hover:bg-success/10" onClick={handleMoveToPeople}>
                   <UserCheck className="h-3.5 w-3.5" />
@@ -531,7 +564,7 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
           </div>
 
           {/* Interview Details */}
-          {(status === "interview" || status === "shortlisted" || status === "offered" || interviewDate) && (
+          {(status === "interview_scheduled" || status === "interview_completed" || status === "shortlisted" || status === "offered" || interviewDate) && (
             <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
               <h4 className="text-sm font-semibold flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />Interview Details
@@ -611,7 +644,7 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
   };
 
   // pipeline funnel counts
-  const stages: ApplicationStatus[] = ["new", "shortlisted", "interview", "offered", "rejected"];
+  const stages: ApplicationStatus[] = ["new", "shortlisted", "interview_scheduled", "interview_completed", "offered", "offer_accepted", "onboarding", "ready_to_start", "rejected"];
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -790,8 +823,8 @@ function ApplicantTrackingTab({ applications, vacancies, onUpdateApp, onMoveToPe
 
   // Overall stats
   const total = applications.length;
-  const inPipeline = applications.filter(a => ["shortlisted", "interview", "offered"].includes(a.status)).length;
-  const offers = applications.filter(a => a.status === "offered").length;
+  const inPipeline = applications.filter(a => ["shortlisted", "interview_scheduled", "interview_completed", "offered", "offer_accepted"].includes(a.status)).length;
+  const offers = applications.filter(a => a.status === "offered" || a.status === "offer_accepted").length;
   const rejections = applications.filter(a => a.status === "rejected").length;
 
   return (
@@ -988,7 +1021,221 @@ function DocumentsTab() {
   );
 }
 
+// ── Onboarding Sub-Tab ─────────────────────────────────────────────────────────
+const ONBOARDING_STATUS_CONFIG: Record<OnboardingStatus, { label: string; color: string }> = {
+  new: { label: "New", color: "bg-primary/10 text-primary border-primary/20" },
+  in_progress: { label: "In Progress", color: "bg-warning/10 text-warning border-warning/20" },
+  waiting_documents: { label: "Waiting Docs", color: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300" },
+  compliance_review: { label: "Compliance Review", color: "bg-secondary/10 text-secondary border-secondary/20" },
+  ready_to_start: { label: "Ready to Start", color: "bg-success/10 text-success border-success/20" },
+  completed: { label: "Completed", color: "bg-muted text-muted-foreground border-border" },
+  on_hold: { label: "On Hold", color: "bg-destructive/10 text-destructive border-destructive/20" },
+};
+
+const WORKER_LABELS: Record<WorkerType, string> = {
+  uk_irish: "UK / Irish Citizen",
+  ilr_settled: "ILR / Settled",
+  non_sponsored_visa: "Non-Sponsored Visa",
+  student_visa: "Student Visa",
+  sponsored_worker: "Sponsored Worker",
+  requires_sponsorship: "Requires Sponsorship",
+  custom: "Custom",
+};
+
+function OnboardingTab({ applications: _apps, vacancies: _vacancies, currentTenantId }: {
+  applications: Application[];
+  vacancies: Vacancy[];
+  currentTenantId?: string;
+}) {
+  const navigate = useNavigate();
+  const [obSearch, setObSearch] = useState("");
+  const [obFilter, setObFilter] = useState<OnboardingStatus | "all">("all");
+
+  // Get onboarding cases from demo data (tenant-scoped if tenantId set)
+  const allCases = currentTenantId
+    ? DEMO_ONBOARDING_CASES.filter(c => c.tenantId === currentTenantId)
+    : DEMO_ONBOARDING_CASES;
+
+  const filtered = allCases.filter(c => {
+    const matchSearch = !obSearch ||
+      `${c.givenName} ${c.familyName}`.toLowerCase().includes(obSearch.toLowerCase()) ||
+      c.appliedRole.toLowerCase().includes(obSearch.toLowerCase());
+    const matchStatus = obFilter === "all" || c.status === obFilter;
+    return matchSearch && matchStatus;
+  });
+
+  // Stats
+  const total = allCases.length;
+  const sponsored = allCases.filter(c => c.requiresSponsorship || c.workerType === "sponsored_worker").length;
+  const pendingRTW = allCases.filter(c => c.checks.some(ch => ch.name.toLowerCase().includes("right to work") && ch.status !== "approved")).length;
+  const missingDocs = allCases.filter(c => c.documents.some(d => d.mandatory && d.verificationStatus === "not_uploaded")).length;
+  const readyToStart = allCases.filter(c => c.status === "ready_to_start").length;
+  const overdue = allCases.filter(c => {
+    const days = c.startDate ? Math.ceil((new Date(c.startDate).getTime() - Date.now()) / 86400000) : null;
+    return days !== null && days < 0 && c.status !== "completed";
+  }).length;
+
+  function fmtDate(s?: string) {
+    if (!s) return "—";
+    return new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Workflow Banner */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <span className="font-semibold text-primary text-sm">Hiring Lifecycle:</span>
+            {["Vacancy", "Application", "Screening", "Interview", "Offer", "Onboarding", "Ready to Start", "People"].map((step, i, arr) => (
+              <span key={step} className="flex items-center gap-1.5">
+                <span className={cn("px-2 py-0.5 rounded font-medium", step === "Onboarding" ? "bg-primary text-primary-foreground" : "bg-background border text-foreground")}>
+                  {step}
+                </span>
+                {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[
+          { label: "In Onboarding", value: total, icon: Users, color: "bg-primary/10 text-primary" },
+          { label: "Sponsored Workers", value: sponsored, icon: Shield, color: "bg-secondary/10 text-secondary" },
+          { label: "Pending RTW", value: pendingRTW, icon: AlertTriangle, color: "bg-warning/10 text-warning" },
+          { label: "Missing Docs", value: missingDocs, icon: FileX, color: "bg-destructive/10 text-destructive" },
+          { label: "Ready to Start", value: readyToStart, icon: CheckCircle2, color: "bg-success/10 text-success" },
+          { label: "Overdue", value: overdue, icon: Clock, color: "bg-destructive/10 text-destructive" },
+        ].map(s => (
+          <Card key={s.label} className="flex-1">
+            <CardContent className="p-3 flex items-center gap-2.5">
+              <div className={cn("rounded-lg p-2 shrink-0", s.color)}>
+                <s.icon className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xl font-bold leading-none">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Case List */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4 text-primary" />
+              Onboarding Cases ({filtered.length})
+            </CardTitle>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-56">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input className="pl-8 h-8 text-sm" placeholder="Search candidates…" value={obSearch} onChange={e => setObSearch(e.target.value)} />
+              </div>
+              <select
+                className="text-xs border rounded px-2 py-1.5 bg-background text-foreground h-8"
+                value={obFilter}
+                onChange={e => setObFilter(e.target.value as OnboardingStatus | "all")}
+              >
+                <option value="all">All Statuses</option>
+                {Object.entries(ONBOARDING_STATUS_CONFIG).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <ClipboardCheck className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium text-sm">No onboarding cases</p>
+              <p className="text-xs mt-1">Candidates move here once marked as Offered or Offer Accepted</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground">Candidate</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground hidden md:table-cell">Role / Dept</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground hidden lg:table-cell">Worker Type</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground hidden xl:table-cell">Start Date</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground">Progress</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground">Status</th>
+                    <th className="py-2.5 px-4" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(c => {
+                    const stCfg = ONBOARDING_STATUS_CONFIG[c.status];
+                    const days = c.startDate ? Math.ceil((new Date(c.startDate).getTime() - Date.now()) / 86400000) : null;
+                    return (
+                      <tr key={c.id} className="border-b last:border-0 hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/recruitment/onboarding/${c.id}`)}>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
+                              {c.givenName[0]}{c.familyName[0]}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{c.givenName} {c.familyName}</p>
+                              <p className="text-xs text-muted-foreground truncate">{c.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 hidden md:table-cell">
+                          <p className="text-sm font-medium truncate">{c.appliedRole}</p>
+                          <p className="text-xs text-muted-foreground">{c.department}</p>
+                        </td>
+                        <td className="py-3 px-4 hidden lg:table-cell">
+                          {c.workerType ? (
+                            <span className="text-xs font-medium">{WORKER_LABELS[c.workerType]}</span>
+                          ) : <span className="text-muted-foreground text-xs">—</span>}
+                        </td>
+                        <td className="py-3 px-4 hidden xl:table-cell">
+                          <p className="text-sm">{fmtDate(c.startDate)}</p>
+                          {days !== null && (
+                            <p className={cn("text-xs", days < 7 ? "text-destructive" : "text-muted-foreground")}>
+                              {days > 0 ? `in ${days}d` : `${Math.abs(days)}d ago`}
+                            </p>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2 min-w-[100px]">
+                            <Progress value={c.onboardingProgress} className="h-1.5 flex-1" />
+                            <span className="text-xs text-muted-foreground w-8 text-right">{c.onboardingProgress}%</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{c.currentStage}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", stCfg.color)}>
+                            {stCfg.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1">
+                            Open <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
+
 export default function RecruitmentPage() {
   const [vacancies, setVacancies] = useState<Vacancy[]>(INITIAL_VACANCIES);
   const [applications, setApplications] = useState<Application[]>(INITIAL_APPLICATIONS);
@@ -999,7 +1246,7 @@ export default function RecruitmentPage() {
   const [statusFilter, setStatusFilter] = useState<VacancyStatus | "all">("all");
   const [movedToPeopleAlert, setMovedToPeopleAlert] = useState<string | null>(null);
 
-  const { isInternal } = useApp();
+  const { isInternal, currentTenant } = useApp();
 
   const filtered = vacancies.filter(v => {
     const matchSearch = v.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -1075,10 +1322,25 @@ export default function RecruitmentPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="vacancies">
-        <TabsList>
-          <TabsTrigger value="vacancies"><Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies</TabsTrigger>
-          <TabsTrigger value="tracking"><Filter className="h-3.5 w-3.5 mr-1.5" />Applicant Tracking</TabsTrigger>
-          <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1.5" />Documents</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto gap-0.5 p-1">
+          <TabsTrigger value="vacancies" className="text-xs">
+            <Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies
+          </TabsTrigger>
+          <TabsTrigger value="candidates" className="text-xs">
+            <Users className="h-3.5 w-3.5 mr-1.5" />Candidates
+          </TabsTrigger>
+          <TabsTrigger value="interviews" className="text-xs">
+            <Calendar className="h-3.5 w-3.5 mr-1.5" />Interviews
+          </TabsTrigger>
+          <TabsTrigger value="offers" className="text-xs">
+            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />Offers
+          </TabsTrigger>
+          <TabsTrigger value="onboarding" className="text-xs">
+            <ClipboardCheck className="h-3.5 w-3.5 mr-1.5" />Onboarding
+          </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">
+            <History className="h-3.5 w-3.5 mr-1.5" />History
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Vacancies Tab ── */}
@@ -1095,7 +1357,7 @@ export default function RecruitmentPage() {
             </div>
             <div className="rounded-xl border bg-card p-4">
               <p className="text-xs text-muted-foreground font-medium mb-1">In Pipeline</p>
-              <p className="text-2xl font-bold">{applications.filter(a => ["shortlisted", "interview", "offered"].includes(a.status)).length}</p>
+              <p className="text-2xl font-bold">{applications.filter(a => ["shortlisted", "interview_scheduled", "interview_completed", "offered", "offer_accepted"].includes(a.status)).length}</p>
             </div>
           </div>
 
@@ -1173,8 +1435,8 @@ export default function RecruitmentPage() {
           </div>
         </TabsContent>
 
-        {/* ── Applicant Tracking Tab ── */}
-        <TabsContent value="tracking" className="mt-5">
+        {/* ── Candidates Tab ── */}
+        <TabsContent value="candidates" className="mt-5">
           <ApplicantTrackingTab
             applications={applications}
             vacancies={vacancies}
@@ -1183,9 +1445,148 @@ export default function RecruitmentPage() {
           />
         </TabsContent>
 
-        {/* ── Documents Tab ── */}
-        <TabsContent value="documents" className="mt-5">
-          <DocumentsTab />
+        {/* ── Interviews Tab ── */}
+        <TabsContent value="interviews" className="mt-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Interview Pipeline</h3>
+                <p className="text-sm text-muted-foreground">Candidates scheduled or completed for interview</p>
+              </div>
+            </div>
+            {(() => {
+              const interviewApps = applications.filter(a => ["interview_scheduled", "interview_completed"].includes(a.status));
+              if (interviewApps.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground rounded-xl border bg-card">
+                    <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No interviews in pipeline</p>
+                    <p className="text-sm mt-1">Move candidates to Interview Scheduled from the Candidates tab</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-xl border bg-card divide-y overflow-hidden">
+                  {interviewApps.map(app => {
+                    const vacancy = vacancies.find(v => v.id === app.vacancyId);
+                    return (
+                      <div key={app.id} className="flex items-center gap-3 p-4">
+                        <div className="h-9 w-9 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary shrink-0">
+                          {app.givenName[0]}{app.familyName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                          <p className="text-xs text-muted-foreground">{vacancy?.title} · {app.interviewerName}</p>
+                          {app.interviewDate && <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Calendar className="h-3 w-3" />{new Date(app.interviewDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p>}
+                        </div>
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
+                          {APP_STATUS_LABELS[app.status]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </TabsContent>
+
+        {/* ── Offers Tab ── */}
+        <TabsContent value="offers" className="mt-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Offers</h3>
+                <p className="text-sm text-muted-foreground">Candidates who have been made an offer</p>
+              </div>
+            </div>
+            {(() => {
+              const offerApps = applications.filter(a => ["offered", "offer_accepted"].includes(a.status));
+              if (offerApps.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground rounded-xl border bg-card">
+                    <Star className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No offers outstanding</p>
+                    <p className="text-sm mt-1">Move candidates to Offered from the Candidates tab</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-xl border bg-card divide-y overflow-hidden">
+                  {offerApps.map(app => {
+                    const vacancy = vacancies.find(v => v.id === app.vacancyId);
+                    return (
+                      <div key={app.id} className="flex items-center gap-3 p-4">
+                        <div className="h-9 w-9 rounded-full bg-success/10 flex items-center justify-center text-xs font-bold text-success shrink-0">
+                          {app.givenName[0]}{app.familyName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                          <p className="text-xs text-muted-foreground">{vacancy?.title} · {app.email}</p>
+                        </div>
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
+                          {APP_STATUS_LABELS[app.status]}
+                        </span>
+                        <Button size="sm" variant="outline" className="h-7 text-xs shrink-0"
+                          onClick={() => handleUpdateApp(app.id, { status: "onboarding" })}>
+                          <ClipboardCheck className="h-3 w-3 mr-1" /> Move to Onboarding
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </TabsContent>
+
+        {/* ── Onboarding Tab ── */}
+        <TabsContent value="onboarding" className="mt-5">
+          <OnboardingTab applications={applications} vacancies={vacancies} currentTenantId={currentTenant?.id} />
+        </TabsContent>
+
+        {/* ── History Tab ── */}
+        <TabsContent value="history" className="mt-5">
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold">Recruitment History</h3>
+              <p className="text-sm text-muted-foreground">Completed, transferred, rejected and withdrawn candidates</p>
+            </div>
+            {(() => {
+              const historyApps = applications.filter(a => ["transferred", "rejected", "withdrawn", "ready_to_start"].includes(a.status));
+              if (historyApps.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground rounded-xl border bg-card">
+                    <History className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No history yet</p>
+                    <p className="text-sm mt-1">Completed hiring journeys will appear here</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-xl border bg-card divide-y overflow-hidden">
+                  {historyApps.map(app => {
+                    const vacancy = vacancies.find(v => v.id === app.vacancyId);
+                    return (
+                      <div key={app.id} className="flex items-center gap-3 p-4">
+                        <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                          {app.givenName[0]}{app.familyName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                          <p className="text-xs text-muted-foreground">{vacancy?.title}</p>
+                          {app.rejectionReason && <p className="text-xs text-destructive/70 mt-0.5 truncate">{app.rejectionReason}</p>}
+                        </div>
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
+                          {APP_STATUS_LABELS[app.status]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
         </TabsContent>
       </Tabs>
 
