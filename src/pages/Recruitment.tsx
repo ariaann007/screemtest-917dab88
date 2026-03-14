@@ -1021,7 +1021,221 @@ function DocumentsTab() {
   );
 }
 
+// ── Onboarding Sub-Tab ─────────────────────────────────────────────────────────
+const ONBOARDING_STATUS_CONFIG: Record<OnboardingStatus, { label: string; color: string }> = {
+  new: { label: "New", color: "bg-primary/10 text-primary border-primary/20" },
+  in_progress: { label: "In Progress", color: "bg-warning/10 text-warning border-warning/20" },
+  waiting_documents: { label: "Waiting Docs", color: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300" },
+  compliance_review: { label: "Compliance Review", color: "bg-secondary/10 text-secondary border-secondary/20" },
+  ready_to_start: { label: "Ready to Start", color: "bg-success/10 text-success border-success/20" },
+  completed: { label: "Completed", color: "bg-muted text-muted-foreground border-border" },
+  on_hold: { label: "On Hold", color: "bg-destructive/10 text-destructive border-destructive/20" },
+};
+
+const WORKER_LABELS: Record<WorkerType, string> = {
+  uk_irish: "UK / Irish Citizen",
+  ilr_settled: "ILR / Settled",
+  non_sponsored_visa: "Non-Sponsored Visa",
+  student_visa: "Student Visa",
+  sponsored_worker: "Sponsored Worker",
+  requires_sponsorship: "Requires Sponsorship",
+  custom: "Custom",
+};
+
+function OnboardingTab({ applications: _apps, vacancies: _vacancies, currentTenantId }: {
+  applications: Application[];
+  vacancies: Vacancy[];
+  currentTenantId?: string;
+}) {
+  const navigate = useNavigate();
+  const [obSearch, setObSearch] = useState("");
+  const [obFilter, setObFilter] = useState<OnboardingStatus | "all">("all");
+
+  // Get onboarding cases from demo data (tenant-scoped if tenantId set)
+  const allCases = currentTenantId
+    ? DEMO_ONBOARDING_CASES.filter(c => c.tenantId === currentTenantId)
+    : DEMO_ONBOARDING_CASES;
+
+  const filtered = allCases.filter(c => {
+    const matchSearch = !obSearch ||
+      `${c.givenName} ${c.familyName}`.toLowerCase().includes(obSearch.toLowerCase()) ||
+      c.appliedRole.toLowerCase().includes(obSearch.toLowerCase());
+    const matchStatus = obFilter === "all" || c.status === obFilter;
+    return matchSearch && matchStatus;
+  });
+
+  // Stats
+  const total = allCases.length;
+  const sponsored = allCases.filter(c => c.requiresSponsorship || c.workerType === "sponsored_worker").length;
+  const pendingRTW = allCases.filter(c => c.checks.some(ch => ch.name.toLowerCase().includes("right to work") && ch.status !== "approved")).length;
+  const missingDocs = allCases.filter(c => c.documents.some(d => d.mandatory && d.verificationStatus === "not_uploaded")).length;
+  const readyToStart = allCases.filter(c => c.status === "ready_to_start").length;
+  const overdue = allCases.filter(c => {
+    const days = c.startDate ? Math.ceil((new Date(c.startDate).getTime() - Date.now()) / 86400000) : null;
+    return days !== null && days < 0 && c.status !== "completed";
+  }).length;
+
+  function fmtDate(s?: string) {
+    if (!s) return "—";
+    return new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Workflow Banner */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <span className="font-semibold text-primary text-sm">Hiring Lifecycle:</span>
+            {["Vacancy", "Application", "Screening", "Interview", "Offer", "Onboarding", "Ready to Start", "People"].map((step, i, arr) => (
+              <span key={step} className="flex items-center gap-1.5">
+                <span className={cn("px-2 py-0.5 rounded font-medium", step === "Onboarding" ? "bg-primary text-primary-foreground" : "bg-background border text-foreground")}>
+                  {step}
+                </span>
+                {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[
+          { label: "In Onboarding", value: total, icon: Users, color: "bg-primary/10 text-primary" },
+          { label: "Sponsored Workers", value: sponsored, icon: Shield, color: "bg-secondary/10 text-secondary" },
+          { label: "Pending RTW", value: pendingRTW, icon: AlertTriangle, color: "bg-warning/10 text-warning" },
+          { label: "Missing Docs", value: missingDocs, icon: FileX, color: "bg-destructive/10 text-destructive" },
+          { label: "Ready to Start", value: readyToStart, icon: CheckCircle2, color: "bg-success/10 text-success" },
+          { label: "Overdue", value: overdue, icon: Clock, color: "bg-destructive/10 text-destructive" },
+        ].map(s => (
+          <Card key={s.label} className="flex-1">
+            <CardContent className="p-3 flex items-center gap-2.5">
+              <div className={cn("rounded-lg p-2 shrink-0", s.color)}>
+                <s.icon className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xl font-bold leading-none">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Case List */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4 text-primary" />
+              Onboarding Cases ({filtered.length})
+            </CardTitle>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-56">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input className="pl-8 h-8 text-sm" placeholder="Search candidates…" value={obSearch} onChange={e => setObSearch(e.target.value)} />
+              </div>
+              <select
+                className="text-xs border rounded px-2 py-1.5 bg-background text-foreground h-8"
+                value={obFilter}
+                onChange={e => setObFilter(e.target.value as OnboardingStatus | "all")}
+              >
+                <option value="all">All Statuses</option>
+                {Object.entries(ONBOARDING_STATUS_CONFIG).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <ClipboardCheck className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium text-sm">No onboarding cases</p>
+              <p className="text-xs mt-1">Candidates move here once marked as Offered or Offer Accepted</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground">Candidate</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground hidden md:table-cell">Role / Dept</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground hidden lg:table-cell">Worker Type</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground hidden xl:table-cell">Start Date</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground">Progress</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-muted-foreground">Status</th>
+                    <th className="py-2.5 px-4" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(c => {
+                    const stCfg = ONBOARDING_STATUS_CONFIG[c.status];
+                    const days = c.startDate ? Math.ceil((new Date(c.startDate).getTime() - Date.now()) / 86400000) : null;
+                    return (
+                      <tr key={c.id} className="border-b last:border-0 hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/recruitment/onboarding/${c.id}`)}>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
+                              {c.givenName[0]}{c.familyName[0]}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{c.givenName} {c.familyName}</p>
+                              <p className="text-xs text-muted-foreground truncate">{c.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 hidden md:table-cell">
+                          <p className="text-sm font-medium truncate">{c.appliedRole}</p>
+                          <p className="text-xs text-muted-foreground">{c.department}</p>
+                        </td>
+                        <td className="py-3 px-4 hidden lg:table-cell">
+                          {c.workerType ? (
+                            <span className="text-xs font-medium">{WORKER_LABELS[c.workerType]}</span>
+                          ) : <span className="text-muted-foreground text-xs">—</span>}
+                        </td>
+                        <td className="py-3 px-4 hidden xl:table-cell">
+                          <p className="text-sm">{fmtDate(c.startDate)}</p>
+                          {days !== null && (
+                            <p className={cn("text-xs", days < 7 ? "text-destructive" : "text-muted-foreground")}>
+                              {days > 0 ? `in ${days}d` : `${Math.abs(days)}d ago`}
+                            </p>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2 min-w-[100px]">
+                            <Progress value={c.onboardingProgress} className="h-1.5 flex-1" />
+                            <span className="text-xs text-muted-foreground w-8 text-right">{c.onboardingProgress}%</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{c.currentStage}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", stCfg.color)}>
+                            {stCfg.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1">
+                            Open <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
+
 export default function RecruitmentPage() {
   const [vacancies, setVacancies] = useState<Vacancy[]>(INITIAL_VACANCIES);
   const [applications, setApplications] = useState<Application[]>(INITIAL_APPLICATIONS);
