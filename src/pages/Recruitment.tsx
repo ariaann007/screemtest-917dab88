@@ -1108,10 +1108,25 @@ export default function RecruitmentPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="vacancies">
-        <TabsList>
-          <TabsTrigger value="vacancies"><Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies</TabsTrigger>
-          <TabsTrigger value="tracking"><Filter className="h-3.5 w-3.5 mr-1.5" />Applicant Tracking</TabsTrigger>
-          <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1.5" />Documents</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto gap-0.5 p-1">
+          <TabsTrigger value="vacancies" className="text-xs">
+            <Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies
+          </TabsTrigger>
+          <TabsTrigger value="candidates" className="text-xs">
+            <Users className="h-3.5 w-3.5 mr-1.5" />Candidates
+          </TabsTrigger>
+          <TabsTrigger value="interviews" className="text-xs">
+            <Calendar className="h-3.5 w-3.5 mr-1.5" />Interviews
+          </TabsTrigger>
+          <TabsTrigger value="offers" className="text-xs">
+            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />Offers
+          </TabsTrigger>
+          <TabsTrigger value="onboarding" className="text-xs">
+            <ClipboardCheck className="h-3.5 w-3.5 mr-1.5" />Onboarding
+          </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">
+            <History className="h-3.5 w-3.5 mr-1.5" />History
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Vacancies Tab ── */}
@@ -1128,7 +1143,7 @@ export default function RecruitmentPage() {
             </div>
             <div className="rounded-xl border bg-card p-4">
               <p className="text-xs text-muted-foreground font-medium mb-1">In Pipeline</p>
-              <p className="text-2xl font-bold">{applications.filter(a => ["shortlisted", "interview", "offered"].includes(a.status)).length}</p>
+              <p className="text-2xl font-bold">{applications.filter(a => ["shortlisted", "interview_scheduled", "interview_completed", "offered", "offer_accepted"].includes(a.status)).length}</p>
             </div>
           </div>
 
@@ -1206,8 +1221,8 @@ export default function RecruitmentPage() {
           </div>
         </TabsContent>
 
-        {/* ── Applicant Tracking Tab ── */}
-        <TabsContent value="tracking" className="mt-5">
+        {/* ── Candidates Tab ── */}
+        <TabsContent value="candidates" className="mt-5">
           <ApplicantTrackingTab
             applications={applications}
             vacancies={vacancies}
@@ -1216,9 +1231,148 @@ export default function RecruitmentPage() {
           />
         </TabsContent>
 
-        {/* ── Documents Tab ── */}
-        <TabsContent value="documents" className="mt-5">
-          <DocumentsTab />
+        {/* ── Interviews Tab ── */}
+        <TabsContent value="interviews" className="mt-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Interview Pipeline</h3>
+                <p className="text-sm text-muted-foreground">Candidates scheduled or completed for interview</p>
+              </div>
+            </div>
+            {(() => {
+              const interviewApps = applications.filter(a => ["interview_scheduled", "interview_completed"].includes(a.status));
+              if (interviewApps.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground rounded-xl border bg-card">
+                    <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No interviews in pipeline</p>
+                    <p className="text-sm mt-1">Move candidates to Interview Scheduled from the Candidates tab</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-xl border bg-card divide-y overflow-hidden">
+                  {interviewApps.map(app => {
+                    const vacancy = vacancies.find(v => v.id === app.vacancyId);
+                    return (
+                      <div key={app.id} className="flex items-center gap-3 p-4">
+                        <div className="h-9 w-9 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary shrink-0">
+                          {app.givenName[0]}{app.familyName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                          <p className="text-xs text-muted-foreground">{vacancy?.title} · {app.interviewerName}</p>
+                          {app.interviewDate && <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Calendar className="h-3 w-3" />{new Date(app.interviewDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p>}
+                        </div>
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
+                          {APP_STATUS_LABELS[app.status]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </TabsContent>
+
+        {/* ── Offers Tab ── */}
+        <TabsContent value="offers" className="mt-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Offers</h3>
+                <p className="text-sm text-muted-foreground">Candidates who have been made an offer</p>
+              </div>
+            </div>
+            {(() => {
+              const offerApps = applications.filter(a => ["offered", "offer_accepted"].includes(a.status));
+              if (offerApps.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground rounded-xl border bg-card">
+                    <Star className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No offers outstanding</p>
+                    <p className="text-sm mt-1">Move candidates to Offered from the Candidates tab</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-xl border bg-card divide-y overflow-hidden">
+                  {offerApps.map(app => {
+                    const vacancy = vacancies.find(v => v.id === app.vacancyId);
+                    return (
+                      <div key={app.id} className="flex items-center gap-3 p-4">
+                        <div className="h-9 w-9 rounded-full bg-success/10 flex items-center justify-center text-xs font-bold text-success shrink-0">
+                          {app.givenName[0]}{app.familyName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                          <p className="text-xs text-muted-foreground">{vacancy?.title} · {app.email}</p>
+                        </div>
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
+                          {APP_STATUS_LABELS[app.status]}
+                        </span>
+                        <Button size="sm" variant="outline" className="h-7 text-xs shrink-0"
+                          onClick={() => handleUpdateApp(app.id, { status: "onboarding" })}>
+                          <ClipboardCheck className="h-3 w-3 mr-1" /> Move to Onboarding
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </TabsContent>
+
+        {/* ── Onboarding Tab ── */}
+        <TabsContent value="onboarding" className="mt-5">
+          <OnboardingTab applications={applications} vacancies={vacancies} currentTenantId={currentTenant?.id} />
+        </TabsContent>
+
+        {/* ── History Tab ── */}
+        <TabsContent value="history" className="mt-5">
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold">Recruitment History</h3>
+              <p className="text-sm text-muted-foreground">Completed, transferred, rejected and withdrawn candidates</p>
+            </div>
+            {(() => {
+              const historyApps = applications.filter(a => ["transferred", "rejected", "withdrawn", "ready_to_start"].includes(a.status));
+              if (historyApps.length === 0) {
+                return (
+                  <div className="text-center py-16 text-muted-foreground rounded-xl border bg-card">
+                    <History className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No history yet</p>
+                    <p className="text-sm mt-1">Completed hiring journeys will appear here</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-xl border bg-card divide-y overflow-hidden">
+                  {historyApps.map(app => {
+                    const vacancy = vacancies.find(v => v.id === app.vacancyId);
+                    return (
+                      <div key={app.id} className="flex items-center gap-3 p-4">
+                        <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                          {app.givenName[0]}{app.familyName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                          <p className="text-xs text-muted-foreground">{vacancy?.title}</p>
+                          {app.rejectionReason && <p className="text-xs text-destructive/70 mt-0.5 truncate">{app.rejectionReason}</p>}
+                        </div>
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
+                          {APP_STATUS_LABELS[app.status]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
         </TabsContent>
       </Tabs>
 
