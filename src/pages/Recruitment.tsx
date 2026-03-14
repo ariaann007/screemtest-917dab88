@@ -119,7 +119,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     email: "james.okafor@email.com", phone: "07891 234567", nationality: "British",
     rightToWork: "yes_unrestricted", coverLetter: "Born and raised in Birmingham, I have worked in care since leaving college. I have my NVQ Level 3 and completed a leadership course last year. I am eager to take on a senior role.",
     cvFileName: "James_Okafor_CV.docx", cvFileSize: 189000,
-    status: "interview", submittedAt: "2026-02-13T14:00:00Z",
+    status: "interview_scheduled", submittedAt: "2026-02-13T14:00:00Z",
     interviewNotes: "Interview held on 20 Feb. Performed well on scenario-based questions. Awaiting second interview slot confirmation.",
     interviewDate: "2026-02-20", interviewerName: "Sarah Mitchell",
   },
