@@ -1032,7 +1032,7 @@ export default function RecruitmentPage() {
   const [statusFilter, setStatusFilter] = useState<VacancyStatus | "all">("all");
   const [movedToPeopleAlert, setMovedToPeopleAlert] = useState<string | null>(null);
 
-  const { isInternal } = useApp();
+  const { isInternal, currentTenant } = useApp();
 
   const filtered = vacancies.filter(v => {
     const matchSearch = v.title.toLowerCase().includes(search.toLowerCase()) ||
