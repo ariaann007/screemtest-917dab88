@@ -189,15 +189,31 @@ const CONTRACT_LABELS: Record<ContractType, string> = {
 };
 
 const APP_STATUS_LABELS: Record<ApplicationStatus, string> = {
-  new: "New", shortlisted: "Shortlisted", interview: "Interview", offered: "Offered", rejected: "Rejected",
+  new: "New",
+  shortlisted: "Shortlisted",
+  interview_scheduled: "Interview Scheduled",
+  interview_completed: "Interview Completed",
+  offered: "Offered",
+  offer_accepted: "Offer Accepted",
+  onboarding: "Onboarding",
+  ready_to_start: "Ready to Start",
+  transferred: "Transferred",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
 };
 
 const APP_STATUS_COLORS: Record<ApplicationStatus, string> = {
   new: "bg-primary/10 text-primary border-primary/20",
   shortlisted: "bg-warning/10 text-warning border-warning/20",
-  interview: "bg-secondary/10 text-secondary border-secondary/20",
+  interview_scheduled: "bg-secondary/10 text-secondary border-secondary/20",
+  interview_completed: "bg-secondary/10 text-secondary border-secondary/20",
   offered: "bg-success/10 text-success border-success/20",
+  offer_accepted: "bg-success/10 text-success border-success/20",
+  onboarding: "bg-primary/10 text-primary border-primary/20",
+  ready_to_start: "bg-success/10 text-success border-success/20",
+  transferred: "bg-muted text-muted-foreground border-border",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
+  withdrawn: "bg-muted text-muted-foreground border-border",
 };
 
 // Candidate required documents
