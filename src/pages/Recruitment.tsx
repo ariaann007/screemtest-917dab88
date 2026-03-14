@@ -7,13 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   Plus, X, Briefcase, MapPin, Clock, Users, ChevronRight,
   CheckCircle2, FileText, ArrowLeft, Search, Upload, MessageSquare,
   XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp,
+  ArrowRight, Shield, UserPlus, AlertTriangle, FileX, PauseCircle, Star,
+  History, ClipboardCheck, Send,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { DEMO_ONBOARDING_CASES } from "@/data/onboarding-demo";
+import { OnboardingStatus, WorkerType } from "@/types/onboarding";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type ContractType = "full_time" | "part_time" | "contract" | "bank";
