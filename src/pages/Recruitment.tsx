@@ -823,8 +823,8 @@ function ApplicantTrackingTab({ applications, vacancies, onUpdateApp, onMoveToPe
 
   // Overall stats
   const total = applications.length;
-  const inPipeline = applications.filter(a => ["shortlisted", "interview", "offered"].includes(a.status)).length;
-  const offers = applications.filter(a => a.status === "offered").length;
+  const inPipeline = applications.filter(a => ["shortlisted", "interview_scheduled", "interview_completed", "offered", "offer_accepted"].includes(a.status)).length;
+  const offers = applications.filter(a => a.status === "offered" || a.status === "offer_accepted").length;
   const rejections = applications.filter(a => a.status === "rejected").length;
 
   return (
