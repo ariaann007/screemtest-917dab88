@@ -480,12 +480,12 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", APP_STATUS_COLORS[app.status])}>
               {APP_STATUS_LABELS[app.status]}
             </span>
-            {(app.status === "offered" || status === "offered") && !movedToPeople && (
+            {(["offered", "offer_accepted"].includes(app.status) || ["offered", "offer_accepted"].includes(status)) && !movedToPeople && (
               <>
                 <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-primary border-primary/30 hover:bg-primary/10"
-                  onClick={() => { window.location.href = "/onboarding"; }}>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                  Start Onboarding
+                  onClick={() => { onUpdate(app.id, { status: "onboarding" }); onClose(); }}>
+                  <ClipboardCheck className="h-3.5 w-3.5" />
+                  Move to Onboarding
                 </Button>
                 <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-success border-success/30 hover:bg-success/10" onClick={handleMoveToPeople}>
                   <UserCheck className="h-3.5 w-3.5" />
