@@ -1,5 +1,12 @@
 import { useState, useRef } from "react";
 import ImmigrationForm from "@/components/onboarding/ImmigrationForm";
+import PersonalDetailsForm from "@/components/onboarding/PersonalDetailsForm";
+import EmploymentDetailsForm from "@/components/onboarding/EmploymentDetailsForm";
+import EmploymentHistoryForm from "@/components/onboarding/EmploymentHistoryForm";
+import ReferencesForm from "@/components/onboarding/ReferencesForm";
+import PreEmploymentChecksForm from "@/components/onboarding/PreEmploymentChecksForm";
+import TrainingInductionForm from "@/components/onboarding/TrainingInductionForm";
+import DeclarationReviewForm from "@/components/onboarding/DeclarationReviewForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,12 +70,12 @@ interface Application {
 interface OnboardingChecklist {
   personalDetails: boolean;
   employmentDetails: boolean;
-  nextOfKin: boolean;
   immigration: boolean;
-  documents: boolean;
-  bankDetails: boolean;
+  employmentHistory: boolean;
   references: boolean;
-  dbsCheck: boolean;
+  preEmploymentChecks: boolean;
+  trainingInduction: boolean;
+  documents: boolean;
 }
 
 // ── Demo Data ──────────────────────────────────────────────────────────────────
@@ -781,32 +788,12 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
   const [checklist, setChecklist] = useState<OnboardingChecklist>({
     personalDetails: false,
     employmentDetails: false,
-    nextOfKin: false,
     immigration: false,
-    documents: false,
-    bankDetails: false,
+    employmentHistory: false,
     references: false,
-    dbsCheck: false,
-  });
-
-  // Personal details form state
-  const [personalForm, setPersonalForm] = useState({
-    title: "", firstName: app.givenName, lastName: app.familyName, middleName: "", preferredName: "",
-    dateOfBirth: "", gender: "", nationality: app.nationality, niNumber: "",
-    personalEmail: app.email, workEmail: "", mobile: app.phone, phone: "",
-  });
-
-  // Employment details form state
-  const [employmentForm, setEmploymentForm] = useState({
-    employmentType: "", jobTitle: vacancyTitle, department: "", location: "",
-    startDate: "", endDate: "", lineManager: "", salary: "", payFrequency: "",
-    contractHours: "", probationPeriod: "", noticePeriod: "",
-  });
-
-  // Next of kin form state
-  const [nokForm, setNokForm] = useState({
-    nokName: "", nokRelationship: "", nokPhone: "", nokEmail: "", nokAddress: "",
-    emergencyName: "", emergencyRelationship: "", emergencyPhone: "",
+    preEmploymentChecks: false,
+    trainingInduction: false,
+    documents: false,
   });
 
   const completedCount = Object.values(checklist).filter(Boolean).length;
@@ -815,12 +802,17 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
 
   const tabs = [
     { id: "personal", label: "Personal Details", icon: User, done: checklist.personalDetails },
-    { id: "employment", label: "Employment", icon: Briefcase, done: checklist.employmentDetails },
-    { id: "nextofkin", label: "Next of Kin", icon: Heart, done: checklist.nextOfKin },
-    { id: "immigration", label: "Immigration", icon: Globe, done: checklist.immigration },
+    { id: "employment", label: "Employment Details", icon: Briefcase, done: checklist.employmentDetails },
+    { id: "immigration", label: "Right to Work & Immigration", icon: Globe, done: checklist.immigration },
+    { id: "history", label: "Employment History", icon: Clock, done: checklist.employmentHistory },
+    { id: "references", label: "References", icon: Users, done: checklist.references },
+    { id: "checks", label: "Pre-Employment Checks", icon: Shield, done: checklist.preEmploymentChecks },
+    { id: "training", label: "Training & Induction", icon: ClipboardList, done: checklist.trainingInduction },
     { id: "documents", label: "Documents", icon: FileText, done: checklist.documents },
-    { id: "review", label: "Review & Approve", icon: Shield, done: false },
+    { id: "review", label: "Review & Approve", icon: UserCheck, done: false },
   ];
+
+  const sectionStatuses = tabs.filter(t => t.id !== "review").map(t => ({ id: t.id, label: t.label, done: t.done }));
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -849,7 +841,7 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
               {ONBOARDING_STATUS_LABELS[app.onboardingStatus || "invited"]}
             </span>
             <div className="mt-2">
-              <p className="text-xs text-muted-foreground">{completedCount}/{totalChecks} steps completed</p>
+              <p className="text-xs text-muted-foreground">{completedCount}/{totalChecks} sections completed</p>
               <div className="w-32 bg-muted rounded-full h-1.5 mt-1">
                 <div className={cn("h-1.5 rounded-full transition-all", progressPct === 100 ? "bg-success" : "bg-primary")} style={{ width: `${progressPct}%` }} />
               </div>
@@ -861,7 +853,7 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
       {/* Tabs */}
       <div className="flex gap-6">
         {/* Left sidebar checklist */}
-        <div className="w-56 shrink-0 space-y-1">
+        <div className="w-60 shrink-0 space-y-1">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -885,235 +877,74 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
 
         {/* Right content */}
         <div className="flex-1 min-w-0">
-          {/* Personal Details */}
           {activeTab === "personal" && (
-            <div className="rounded-xl border bg-card p-5 space-y-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Personal Details</h3>
-                {checklist.personalDetails && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Title</Label>
-                  <Select value={personalForm.title} onValueChange={v => setPersonalForm(p => ({ ...p, title: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
-                    <SelectContent>
-                      {["Mr", "Ms", "Mrs", "Dr"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>First Name *</Label>
-                  <Input className="mt-1" value={personalForm.firstName} onChange={e => setPersonalForm(p => ({ ...p, firstName: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Last Name *</Label>
-                  <Input className="mt-1" value={personalForm.lastName} onChange={e => setPersonalForm(p => ({ ...p, lastName: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Middle Name</Label>
-                  <Input className="mt-1" value={personalForm.middleName} onChange={e => setPersonalForm(p => ({ ...p, middleName: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Preferred Name</Label>
-                  <Input className="mt-1" value={personalForm.preferredName} onChange={e => setPersonalForm(p => ({ ...p, preferredName: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Date of Birth *</Label>
-                  <Input type="date" className="mt-1" value={personalForm.dateOfBirth} onChange={e => setPersonalForm(p => ({ ...p, dateOfBirth: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Gender</Label>
-                  <Select value={personalForm.gender} onValueChange={v => setPersonalForm(p => ({ ...p, gender: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
-                    <SelectContent>
-                      {["Male", "Female", "Other", "Prefer not to say"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Nationality *</Label>
-                  <Input className="mt-1" value={personalForm.nationality} onChange={e => setPersonalForm(p => ({ ...p, nationality: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>National Insurance Number *</Label>
-                  <Input className="mt-1" value={personalForm.niNumber} onChange={e => setPersonalForm(p => ({ ...p, niNumber: e.target.value }))} placeholder="e.g. AB 12 34 56 C" />
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-sm mb-3 pb-2 border-b">Contact Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Personal Email *</Label><Input type="email" className="mt-1" value={personalForm.personalEmail} onChange={e => setPersonalForm(p => ({ ...p, personalEmail: e.target.value }))} /></div>
-                  <div><Label>Work Email</Label><Input type="email" className="mt-1" value={personalForm.workEmail} onChange={e => setPersonalForm(p => ({ ...p, workEmail: e.target.value }))} /></div>
-                  <div><Label>Mobile Number *</Label><Input className="mt-1" value={personalForm.mobile} onChange={e => setPersonalForm(p => ({ ...p, mobile: e.target.value }))} /></div>
-                  <div><Label>Phone Number</Label><Input className="mt-1" value={personalForm.phone} onChange={e => setPersonalForm(p => ({ ...p, phone: e.target.value }))} /></div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => setChecklist(p => ({ ...p, personalDetails: true }))}>
-                  <CheckCircle2 className="h-4 w-4 mr-1" />Mark as Complete
-                </Button>
-              </div>
-            </div>
+            <PersonalDetailsForm
+              initialData={{ firstName: app.givenName, lastName: app.familyName, email: app.email, phone: app.phone, nationality: app.nationality }}
+              completed={checklist.personalDetails}
+              onComplete={() => setChecklist(p => ({ ...p, personalDetails: true }))}
+            />
           )}
 
-          {/* Employment Details */}
           {activeTab === "employment" && (
-            <div className="rounded-xl border bg-card p-5 space-y-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Employment Details</h3>
-                {checklist.employmentDetails && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Employment Type *</Label>
-                  <Select value={employmentForm.employmentType} onValueChange={v => setEmploymentForm(p => ({ ...p, employmentType: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
-                    <SelectContent>
-                      {["Permanent", "Fixed-term", "Contract", "Bank / Casual"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Job Title *</Label><Input className="mt-1" value={employmentForm.jobTitle} onChange={e => setEmploymentForm(p => ({ ...p, jobTitle: e.target.value }))} /></div>
-                <div><Label>Department</Label><Input className="mt-1" value={employmentForm.department} onChange={e => setEmploymentForm(p => ({ ...p, department: e.target.value }))} /></div>
-                <div><Label>Location</Label><Input className="mt-1" value={employmentForm.location} onChange={e => setEmploymentForm(p => ({ ...p, location: e.target.value }))} /></div>
-                <div><Label>Start Date *</Label><Input type="date" className="mt-1" value={employmentForm.startDate} onChange={e => setEmploymentForm(p => ({ ...p, startDate: e.target.value }))} /></div>
-                <div><Label>End Date</Label><Input type="date" className="mt-1" value={employmentForm.endDate} onChange={e => setEmploymentForm(p => ({ ...p, endDate: e.target.value }))} /></div>
-                <div><Label>Line Manager</Label><Input className="mt-1" value={employmentForm.lineManager} onChange={e => setEmploymentForm(p => ({ ...p, lineManager: e.target.value }))} /></div>
-                <div><Label>Salary (£) *</Label><Input type="number" className="mt-1" value={employmentForm.salary} onChange={e => setEmploymentForm(p => ({ ...p, salary: e.target.value }))} /></div>
-                <div>
-                  <Label>Pay Frequency</Label>
-                  <Select value={employmentForm.payFrequency} onValueChange={v => setEmploymentForm(p => ({ ...p, payFrequency: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
-                    <SelectContent>
-                      {["Monthly", "Weekly", "Fortnightly", "4-Weekly"].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Contract Hours (per week)</Label><Input type="number" className="mt-1" value={employmentForm.contractHours} onChange={e => setEmploymentForm(p => ({ ...p, contractHours: e.target.value }))} /></div>
-                <div><Label>Probation Period</Label><Input className="mt-1" value={employmentForm.probationPeriod} onChange={e => setEmploymentForm(p => ({ ...p, probationPeriod: e.target.value }))} placeholder="e.g. 6 months" /></div>
-                <div><Label>Notice Period</Label><Input className="mt-1" value={employmentForm.noticePeriod} onChange={e => setEmploymentForm(p => ({ ...p, noticePeriod: e.target.value }))} placeholder="e.g. 1 month" /></div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => setChecklist(p => ({ ...p, employmentDetails: true }))}>
-                  <CheckCircle2 className="h-4 w-4 mr-1" />Mark as Complete
-                </Button>
-              </div>
-            </div>
+            <EmploymentDetailsForm
+              initialJobTitle={vacancyTitle}
+              completed={checklist.employmentDetails}
+              onComplete={() => setChecklist(p => ({ ...p, employmentDetails: true }))}
+            />
           )}
 
-          {/* Next of Kin */}
-          {activeTab === "nextofkin" && (
-            <div className="rounded-xl border bg-card p-5 space-y-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Next of Kin & Emergency Contact</h3>
-                {checklist.nextOfKin && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-sm mb-3 pb-2 border-b">Next of Kin</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Full Name *</Label><Input className="mt-1" value={nokForm.nokName} onChange={e => setNokForm(p => ({ ...p, nokName: e.target.value }))} /></div>
-                  <div><Label>Relationship *</Label><Input className="mt-1" value={nokForm.nokRelationship} onChange={e => setNokForm(p => ({ ...p, nokRelationship: e.target.value }))} placeholder="e.g. Spouse, Parent" /></div>
-                  <div><Label>Phone Number *</Label><Input className="mt-1" value={nokForm.nokPhone} onChange={e => setNokForm(p => ({ ...p, nokPhone: e.target.value }))} /></div>
-                  <div><Label>Email *</Label><Input type="email" className="mt-1" value={nokForm.nokEmail} onChange={e => setNokForm(p => ({ ...p, nokEmail: e.target.value }))} /></div>
-                  <div className="col-span-2"><Label>Address *</Label><Textarea className="mt-1" value={nokForm.nokAddress} onChange={e => setNokForm(p => ({ ...p, nokAddress: e.target.value }))} /></div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-sm mb-3 pb-2 border-b">Emergency Contact</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Full Name</Label><Input className="mt-1" value={nokForm.emergencyName} onChange={e => setNokForm(p => ({ ...p, emergencyName: e.target.value }))} /></div>
-                  <div><Label>Relationship</Label><Input className="mt-1" value={nokForm.emergencyRelationship} onChange={e => setNokForm(p => ({ ...p, emergencyRelationship: e.target.value }))} /></div>
-                  <div><Label>Phone Number</Label><Input className="mt-1" value={nokForm.emergencyPhone} onChange={e => setNokForm(p => ({ ...p, emergencyPhone: e.target.value }))} /></div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => setChecklist(p => ({ ...p, nextOfKin: true }))}>
-                  <CheckCircle2 className="h-4 w-4 mr-1" />Mark as Complete
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Immigration */}
           {activeTab === "immigration" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Immigration & Right to Work</h3>
+                <h3 className="font-semibold text-lg">Section 3: Right to Work & Immigration</h3>
                 {checklist.immigration && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
               </div>
               <ImmigrationForm onSave={() => setChecklist(p => ({ ...p, immigration: true }))} />
             </div>
           )}
 
-          {/* Documents */}
-          {activeTab === "documents" && (
-            <DocumentsChecklistInline checklist={checklist} onComplete={() => setChecklist(p => ({ ...p, documents: true, bankDetails: true, references: true, dbsCheck: true }))} />
+          {activeTab === "history" && (
+            <EmploymentHistoryForm
+              completed={checklist.employmentHistory}
+              onComplete={() => setChecklist(p => ({ ...p, employmentHistory: true }))}
+            />
           )}
 
-          {/* Review & Approve */}
+          {activeTab === "references" && (
+            <ReferencesForm
+              completed={checklist.references}
+              onComplete={() => setChecklist(p => ({ ...p, references: true }))}
+            />
+          )}
+
+          {activeTab === "checks" && (
+            <PreEmploymentChecksForm
+              completed={checklist.preEmploymentChecks}
+              onComplete={() => setChecklist(p => ({ ...p, preEmploymentChecks: true }))}
+            />
+          )}
+
+          {activeTab === "training" && (
+            <TrainingInductionForm
+              completed={checklist.trainingInduction}
+              onComplete={() => setChecklist(p => ({ ...p, trainingInduction: true }))}
+            />
+          )}
+
+          {activeTab === "documents" && (
+            <DocumentsChecklistInline checklist={checklist} onComplete={() => setChecklist(p => ({ ...p, documents: true }))} />
+          )}
+
           {activeTab === "review" && (
-            <div className="rounded-xl border bg-card p-5 space-y-5">
-              <h3 className="font-semibold text-lg">Review & Approve</h3>
-              <p className="text-sm text-muted-foreground">Review all onboarding steps before moving this candidate to People as a live employee.</p>
-
-              <div className="space-y-2">
-                {tabs.filter(t => t.id !== "review").map(tab => (
-                  <div key={tab.id} className="flex items-center gap-3 p-3 rounded-lg border">
-                    {tab.done ? (
-                      <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
-                    ) : (
-                      <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
-                    )}
-                    <span className="text-sm font-medium flex-1">{tab.label}</span>
-                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full",
-                      tab.done ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-                    )}>
-                      {tab.done ? "Complete" : "Incomplete"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {progressPct === 100 ? (
-                <div className="space-y-3">
-                  <div className="rounded-lg border border-success/30 bg-success/5 p-4">
-                    <p className="text-sm text-success font-medium flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4" />
-                      All onboarding steps are complete. This candidate is ready to be moved to People.
-                    </p>
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <Button variant="outline" onClick={() => {
-                      onUpdate(app.id, { onboardingStatus: "ready" });
-                    }}>
-                      Mark Ready to Start
-                    </Button>
-                    <Button onClick={() => {
-                      onUpdate(app.id, { onboardingStatus: "moved", movedToPeople: true });
-                      onMoveToPeople(app);
-                    }}>
-                      <UserCheck className="h-4 w-4 mr-1" />Move to People
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
-                  <p className="text-sm text-warning font-medium flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {totalChecks - completedCount} step(s) still incomplete. Complete all steps before moving to People.
-                  </p>
-                </div>
-              )}
-            </div>
+            <DeclarationReviewForm
+              sectionStatuses={sectionStatuses}
+              progressPct={progressPct}
+              onMarkReady={() => onUpdate(app.id, { onboardingStatus: "ready" })}
+              onMoveToPeople={() => {
+                onUpdate(app.id, { onboardingStatus: "moved", movedToPeople: true });
+                onMoveToPeople(app);
+              }}
+            />
           )}
         </div>
       </div>
