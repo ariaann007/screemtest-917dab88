@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import {
   Plus, X, Briefcase, MapPin, Clock, Users, ChevronRight,
   CheckCircle2, FileText, ArrowLeft, Search, Upload, MessageSquare,
-  XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp,
+  XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp, Globe,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
