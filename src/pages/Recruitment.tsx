@@ -11,6 +11,8 @@ import {
   Plus, X, Briefcase, MapPin, Clock, Users, ChevronRight,
   CheckCircle2, FileText, ArrowLeft, Search, Upload, MessageSquare,
   XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp, Globe,
+  ClipboardList, User, Building2, Heart, Shield, ChevronDown, ChevronUp,
+  AlertTriangle, Phone, Mail,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
@@ -18,6 +20,7 @@ import { useApp } from "@/context/AppContext";
 type ContractType = "full_time" | "part_time" | "contract" | "bank";
 type VacancyStatus = "open" | "closed" | "draft";
 type ApplicationStatus = "new" | "shortlisted" | "interview" | "offered" | "rejected";
+type OnboardingStatus = "invited" | "in_progress" | "review" | "ready" | "moved";
 
 interface Vacancy {
   id: string;
@@ -54,6 +57,18 @@ interface Application {
   interviewDate?: string;
   interviewerName?: string;
   movedToPeople?: boolean;
+  onboardingStatus?: OnboardingStatus;
+}
+
+interface OnboardingChecklist {
+  personalDetails: boolean;
+  employmentDetails: boolean;
+  nextOfKin: boolean;
+  immigration: boolean;
+  documents: boolean;
+  bankDetails: boolean;
+  references: boolean;
+  dbsCheck: boolean;
 }
 
 // ── Demo Data ──────────────────────────────────────────────────────────────────
@@ -85,7 +100,6 @@ const INITIAL_VACANCIES: Vacancy[] = [
 ];
 
 const INITIAL_APPLICATIONS: Application[] = [
-  // Senior Care Worker (v1)
   {
     id: "a1", vacancyId: "v1", givenName: "Priya", familyName: "Sharma",
     email: "priya.sharma@email.com", phone: "07712 345678", nationality: "Indian",
@@ -120,7 +134,6 @@ const INITIAL_APPLICATIONS: Application[] = [
     cvFileName: "Tom_Hutchins_CV.pdf", cvFileSize: 165000,
     status: "new", submittedAt: "2026-02-18T16:45:00Z",
   },
-  // Registered Nurse (v2)
   {
     id: "a5", vacancyId: "v2", givenName: "Lakshmi", familyName: "Nair",
     email: "lakshmi.nair@email.com", phone: "07400 112233", nationality: "Indian",
@@ -130,6 +143,7 @@ const INITIAL_APPLICATIONS: Application[] = [
     status: "offered", submittedAt: "2026-02-17T11:00:00Z",
     interviewNotes: "Excellent candidate. NMC PIN verified. Strong clinical knowledge. Referenced checked. Verbal offer made on 25 Feb — awaiting written acceptance.",
     interviewDate: "2026-02-22", interviewerName: "Dr. Michael Osei",
+    onboardingStatus: "in_progress",
   },
   {
     id: "a6", vacancyId: "v2", givenName: "David", familyName: "Owusu",
@@ -147,7 +161,6 @@ const INITIAL_APPLICATIONS: Application[] = [
     cvFileName: "Sarah_Connelly_CV.pdf", cvFileSize: 174000,
     status: "new", submittedAt: "2026-02-22T13:20:00Z",
   },
-  // Care Assistant (v3)
   {
     id: "a8", vacancyId: "v3", givenName: "Maria", familyName: "Kowalski",
     email: "maria.kowalski@email.com", phone: "07633 445566", nationality: "Polish",
@@ -182,7 +195,18 @@ const APP_STATUS_COLORS: Record<ApplicationStatus, string> = {
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
-// Candidate required documents
+const ONBOARDING_STATUS_LABELS: Record<OnboardingStatus, string> = {
+  invited: "Invited", in_progress: "In Progress", review: "Under Review", ready: "Ready to Start", moved: "Moved to People",
+};
+
+const ONBOARDING_STATUS_COLORS: Record<OnboardingStatus, string> = {
+  invited: "bg-primary/10 text-primary border-primary/20",
+  in_progress: "bg-warning/10 text-warning border-warning/20",
+  review: "bg-secondary/10 text-secondary border-secondary/20",
+  ready: "bg-success/10 text-success border-success/20",
+  moved: "bg-muted text-muted-foreground border-border",
+};
+
 const CANDIDATE_DOCS = [
   { id: "cd1", name: "Photo ID / Passport", required: true, description: "Valid passport or national identity document" },
   { id: "cd2", name: "Right to Work Evidence", required: true, description: "Visa, BRP card, or share code evidence" },
@@ -399,12 +423,12 @@ function ApplyModal({ vacancy, onClose, onSubmit }: { vacancy: Vacancy; onClose:
 }
 
 // ── Application Detail Modal ───────────────────────────────────────────────────
-function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeople }: {
+function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onStartOnboarding }: {
   app: Application;
   vacancyTitle?: string;
   onClose: () => void;
   onUpdate: (id: string, changes: Partial<Application>) => void;
-  onMoveToPeople?: (app: Application) => void;
+  onStartOnboarding?: (app: Application) => void;
 }) {
   const [status, setStatus] = useState<ApplicationStatus>(app.status);
   const [interviewNotes, setInterviewNotes] = useState(app.interviewNotes || "");
@@ -412,18 +436,11 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
   const [interviewDate, setInterviewDate] = useState(app.interviewDate || "");
   const [interviewerName, setInterviewerName] = useState(app.interviewerName || "");
   const [saved, setSaved] = useState(false);
-  const [movedToPeople, setMovedToPeople] = useState(app.movedToPeople || false);
 
   const handleSave = () => {
     onUpdate(app.id, { status, interviewNotes, rejectionReason, interviewDate, interviewerName });
     setSaved(true);
     setTimeout(() => { setSaved(false); onClose(); }, 800);
-  };
-
-  const handleMoveToPeople = () => {
-    onUpdate(app.id, { movedToPeople: true, status: "offered" });
-    onMoveToPeople?.(app);
-    setMovedToPeople(true);
   };
 
   return (
@@ -441,25 +458,23 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
         </div>
 
         <div className="p-5 space-y-5">
-          {/* Status badge + Move to People */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", APP_STATUS_COLORS[app.status])}>
               {APP_STATUS_LABELS[app.status]}
             </span>
-            {(app.status === "offered" || status === "offered") && !movedToPeople && (
-              <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-success border-success/30 hover:bg-success/10" onClick={handleMoveToPeople}>
-                <UserCheck className="h-3.5 w-3.5" />
-                Add to Live Workers
+            {(app.status === "offered" || status === "offered") && !app.onboardingStatus && onStartOnboarding && (
+              <Button size="sm" variant="outline" className="h-6 text-xs gap-1 text-success border-success/30 hover:bg-success/10" onClick={() => onStartOnboarding(app)}>
+                <ClipboardList className="h-3.5 w-3.5" />
+                Start Onboarding
               </Button>
             )}
-            {movedToPeople && (
-              <span className="text-xs text-success flex items-center gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Added to People
+            {app.onboardingStatus && (
+              <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", ONBOARDING_STATUS_COLORS[app.onboardingStatus])}>
+                Onboarding: {ONBOARDING_STATUS_LABELS[app.onboardingStatus]}
               </span>
             )}
           </div>
 
-          {/* Contact info */}
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{app.email}</p></div>
             <div><p className="text-xs text-muted-foreground">Phone</p><p className="font-medium">{app.phone || "—"}</p></div>
@@ -475,7 +490,6 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             </div>
           </div>
 
-          {/* CV */}
           {app.cvFileName && (
             <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
               <FileText className="h-4 w-4 text-primary shrink-0" />
@@ -487,7 +501,6 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             </div>
           )}
 
-          {/* Cover Letter */}
           {app.coverLetter && (
             <div>
               <p className="text-xs text-muted-foreground mb-1">Cover Letter</p>
@@ -495,7 +508,6 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             </div>
           )}
 
-          {/* LinkedIn */}
           {app.linkedIn && (
             <div>
               <p className="text-xs text-muted-foreground mb-1">LinkedIn</p>
@@ -503,7 +515,6 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             </div>
           )}
 
-          {/* Update Status */}
           <div>
             <Label className="text-xs text-muted-foreground mb-2 block">Pipeline Stage</Label>
             <div className="flex flex-wrap gap-2">
@@ -522,7 +533,6 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             </div>
           </div>
 
-          {/* Interview Details */}
           {(status === "interview" || status === "shortlisted" || status === "offered" || interviewDate) && (
             <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
               <h4 className="text-sm font-semibold flex items-center gap-1.5">
@@ -541,7 +551,6 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             </div>
           )}
 
-          {/* Interview Notes */}
           <div>
             <Label className="flex items-center gap-1.5 mb-1 text-sm">
               <MessageSquare className="h-3.5 w-3.5" />
@@ -555,7 +564,6 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
             />
           </div>
 
-          {/* Rejection Reason */}
           {(status === "rejected" || rejectionReason) && (
             <div>
               <Label className="flex items-center gap-1.5 mb-1 text-destructive text-sm">
@@ -584,13 +592,13 @@ function ApplicationDetail({ app, vacancyTitle, onClose, onUpdate, onMoveToPeopl
 }
 
 // ── Vacancy Detail View ────────────────────────────────────────────────────────
-function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, onMoveToPeople }: {
+function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, onStartOnboarding }: {
   vacancy: Vacancy;
   applications: Application[];
   onBack: () => void;
   onApply: () => void;
   onUpdateApp: (id: string, changes: Partial<Application>) => void;
-  onMoveToPeople: (app: Application) => void;
+  onStartOnboarding: (app: Application) => void;
 }) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [appFilter, setAppFilter] = useState<ApplicationStatus | "all">("all");
@@ -602,7 +610,6 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
     setSelectedApp(null);
   };
 
-  // pipeline funnel counts
   const stages: ApplicationStatus[] = ["new", "shortlisted", "interview", "offered", "rejected"];
 
   return (
@@ -611,7 +618,6 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
         <ArrowLeft className="h-4 w-4" /> Back to vacancies
       </button>
 
-      {/* Vacancy Header */}
       <div className="rounded-xl border bg-card p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
@@ -653,11 +659,10 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
         </div>
       </div>
 
-      {/* Pipeline funnel */}
       <div className="rounded-xl border bg-card p-5">
         <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><TrendingUp className="h-4 w-4" />Candidate Pipeline</h3>
         <div className="flex gap-2 items-end">
-          {stages.map((s, i) => {
+          {stages.map(s => {
             const count = applications.filter(a => a.status === s).length;
             const maxCount = Math.max(...stages.map(st => applications.filter(a => a.status === st).length), 1);
             const heightPct = Math.max((count / maxCount) * 80, 12);
@@ -681,7 +686,6 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
         </div>
       </div>
 
-      {/* Applications Panel */}
       <div className="rounded-xl border bg-card p-5">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="font-semibold flex items-center gap-2">
@@ -730,7 +734,11 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
                     <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
                     {app.cvFileName && <span title="CV attached"><Paperclip className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
                     {app.interviewNotes && <span title="Has interview notes"><MessageSquare className="h-3 w-3 text-muted-foreground shrink-0" /></span>}
-                    {app.movedToPeople && <span title="Added to People"><UserCheck className="h-3 w-3 text-success shrink-0" /></span>}
+                    {app.onboardingStatus && (
+                      <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full border", ONBOARDING_STATUS_COLORS[app.onboardingStatus])}>
+                        {ONBOARDING_STATUS_LABELS[app.onboardingStatus]}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {app.email}
@@ -754,152 +762,372 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
           vacancyTitle={vacancy.title}
           onClose={() => setSelectedApp(null)}
           onUpdate={handleUpdate}
-          onMoveToPeople={onMoveToPeople}
+          onStartOnboarding={onStartOnboarding}
         />
       )}
     </div>
   );
 }
 
-// ── Applicant Tracking Tab ─────────────────────────────────────────────────────
-function ApplicantTrackingTab({ applications, vacancies, onUpdateApp, onMoveToPeople }: {
-  applications: Application[];
-  vacancies: Vacancy[];
-  onUpdateApp: (id: string, changes: Partial<Application>) => void;
+// ── Onboarding Candidate Detail ────────────────────────────────────────────────
+function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMoveToPeople }: {
+  app: Application;
+  vacancyTitle: string;
+  onBack: () => void;
+  onUpdate: (id: string, changes: Partial<Application>) => void;
   onMoveToPeople: (app: Application) => void;
 }) {
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [stageFilter, setStageFilter] = useState<ApplicationStatus | "all">("all");
-  const [search, setSearch] = useState("");
-
-  const filtered = applications.filter(a => {
-    const matchStage = stageFilter === "all" || a.status === stageFilter;
-    const matchSearch = !search || `${a.givenName} ${a.familyName} ${a.email}`.toLowerCase().includes(search.toLowerCase());
-    return matchStage && matchSearch;
+  const [activeTab, setActiveTab] = useState("personal");
+  const [checklist, setChecklist] = useState<OnboardingChecklist>({
+    personalDetails: false,
+    employmentDetails: false,
+    nextOfKin: false,
+    immigration: false,
+    documents: false,
+    bankDetails: false,
+    references: false,
+    dbsCheck: false,
   });
 
-  const getVacancyTitle = (id: string) => vacancies.find(v => v.id === id)?.title || "Unknown Role";
+  // Personal details form state
+  const [personalForm, setPersonalForm] = useState({
+    title: "", firstName: app.givenName, lastName: app.familyName, middleName: "", preferredName: "",
+    dateOfBirth: "", gender: "", nationality: app.nationality, niNumber: "",
+    personalEmail: app.email, workEmail: "", mobile: app.phone, phone: "",
+  });
 
-  // Overall stats
-  const total = applications.length;
-  const inPipeline = applications.filter(a => ["shortlisted", "interview", "offered"].includes(a.status)).length;
-  const offers = applications.filter(a => a.status === "offered").length;
-  const rejections = applications.filter(a => a.status === "rejected").length;
+  // Employment details form state
+  const [employmentForm, setEmploymentForm] = useState({
+    employmentType: "", jobTitle: vacancyTitle, department: "", location: "",
+    startDate: "", endDate: "", lineManager: "", salary: "", payFrequency: "",
+    contractHours: "", probationPeriod: "", noticePeriod: "",
+  });
+
+  // Next of kin form state
+  const [nokForm, setNokForm] = useState({
+    nokName: "", nokRelationship: "", nokPhone: "", nokEmail: "", nokAddress: "",
+    emergencyName: "", emergencyRelationship: "", emergencyPhone: "",
+  });
+
+  const completedCount = Object.values(checklist).filter(Boolean).length;
+  const totalChecks = Object.keys(checklist).length;
+  const progressPct = Math.round((completedCount / totalChecks) * 100);
+
+  const tabs = [
+    { id: "personal", label: "Personal Details", icon: User, done: checklist.personalDetails },
+    { id: "employment", label: "Employment", icon: Briefcase, done: checklist.employmentDetails },
+    { id: "nextofkin", label: "Next of Kin", icon: Heart, done: checklist.nextOfKin },
+    { id: "immigration", label: "Immigration", icon: Globe, done: checklist.immigration },
+    { id: "documents", label: "Documents", icon: FileText, done: checklist.documents },
+    { id: "review", label: "Review & Approve", icon: Shield, done: false },
+  ];
 
   return (
-    <div className="space-y-5">
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: "Total Applicants", value: total, color: "text-foreground" },
-          { label: "In Pipeline", value: inPipeline, color: "text-secondary" },
-          { label: "Offers Made", value: offers, color: "text-success" },
-          { label: "Rejected", value: rejections, color: "text-destructive" },
-        ].map(s => (
-          <div key={s.label} className="rounded-xl border bg-card p-4 text-center">
-            <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+    <div className="space-y-5 animate-fade-in">
+      <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <ArrowLeft className="h-4 w-4" /> Back to onboarding
+      </button>
+
+      {/* Candidate header */}
+      <div className="rounded-xl border bg-card p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
+              {app.givenName[0]}{app.familyName[0]}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">{app.givenName} {app.familyName}</h2>
+              <p className="text-sm text-muted-foreground">{vacancyTitle}</p>
+              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{app.email}</span>
+                {app.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{app.phone}</span>}
+              </div>
+            </div>
           </div>
-        ))}
+          <div className="text-right shrink-0">
+            <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", ONBOARDING_STATUS_COLORS[app.onboardingStatus || "invited"])}>
+              {ONBOARDING_STATUS_LABELS[app.onboardingStatus || "invited"]}
+            </span>
+            <div className="mt-2">
+              <p className="text-xs text-muted-foreground">{completedCount}/{totalChecks} steps completed</p>
+              <div className="w-32 bg-muted rounded-full h-1.5 mt-1">
+                <div className={cn("h-1.5 rounded-full transition-all", progressPct === 100 ? "bg-success" : "bg-primary")} style={{ width: `${progressPct}%` }} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-9 h-9" placeholder="Search candidates…" value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-        <div className="flex gap-1 flex-wrap">
-          <button
-            onClick={() => setStageFilter("all")}
-            className={cn("text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
-              stageFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"
-            )}
-          >
-            All Stages
-          </button>
-          {(Object.keys(APP_STATUS_LABELS) as ApplicationStatus[]).map(s => (
+      {/* Tabs */}
+      <div className="flex gap-6">
+        {/* Left sidebar checklist */}
+        <div className="w-56 shrink-0 space-y-1">
+          {tabs.map(tab => (
             <button
-              key={s}
-              onClick={() => setStageFilter(s)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
-                stageFilter === s ? APP_STATUS_COLORS[s] : "border-border text-muted-foreground hover:bg-muted"
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
+                activeTab === tab.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
               )}
             >
-              {APP_STATUS_LABELS[s]}
+              {tab.done ? (
+                <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+              ) : (
+                <tab.icon className="h-4 w-4 shrink-0" />
+              )}
+              <span className="truncate">{tab.label}</span>
             </button>
           ))}
         </div>
-      </div>
 
-      {/* All Candidates Table */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="font-medium text-sm">No candidates found</p>
-          </div>
-        ) : (
-          <div className="divide-y">
-            {filtered.map(app => (
-              <button
-                key={app.id}
-                onClick={() => setSelectedApp(app)}
-                className="w-full flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors text-left group"
-              >
-                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                  {app.givenName[0]}{app.familyName[0]}
+        {/* Right content */}
+        <div className="flex-1 min-w-0">
+          {/* Personal Details */}
+          {activeTab === "personal" && (
+            <div className="rounded-xl border bg-card p-5 space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg">Personal Details</h3>
+                {checklist.personalDetails && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Title</Label>
+                  <Select value={personalForm.title} onValueChange={v => setPersonalForm(p => ({ ...p, title: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      {["Mr", "Ms", "Mrs", "Dr"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
-                    {app.cvFileName && <Paperclip className="h-3 w-3 text-muted-foreground shrink-0" />}
-                    {app.interviewNotes && <MessageSquare className="h-3 w-3 text-muted-foreground shrink-0" />}
-                    {app.movedToPeople && <UserCheck className="h-3 w-3 text-success shrink-0" />}
+                <div>
+                  <Label>First Name *</Label>
+                  <Input className="mt-1" value={personalForm.firstName} onChange={e => setPersonalForm(p => ({ ...p, firstName: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Last Name *</Label>
+                  <Input className="mt-1" value={personalForm.lastName} onChange={e => setPersonalForm(p => ({ ...p, lastName: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Middle Name</Label>
+                  <Input className="mt-1" value={personalForm.middleName} onChange={e => setPersonalForm(p => ({ ...p, middleName: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Preferred Name</Label>
+                  <Input className="mt-1" value={personalForm.preferredName} onChange={e => setPersonalForm(p => ({ ...p, preferredName: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Date of Birth *</Label>
+                  <Input type="date" className="mt-1" value={personalForm.dateOfBirth} onChange={e => setPersonalForm(p => ({ ...p, dateOfBirth: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Gender</Label>
+                  <Select value={personalForm.gender} onValueChange={v => setPersonalForm(p => ({ ...p, gender: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      {["Male", "Female", "Other", "Prefer not to say"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Nationality *</Label>
+                  <Input className="mt-1" value={personalForm.nationality} onChange={e => setPersonalForm(p => ({ ...p, nationality: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>National Insurance Number *</Label>
+                  <Input className="mt-1" value={personalForm.niNumber} onChange={e => setPersonalForm(p => ({ ...p, niNumber: e.target.value }))} placeholder="e.g. AB 12 34 56 C" />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-sm mb-3 pb-2 border-b">Contact Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Personal Email *</Label><Input type="email" className="mt-1" value={personalForm.personalEmail} onChange={e => setPersonalForm(p => ({ ...p, personalEmail: e.target.value }))} /></div>
+                  <div><Label>Work Email</Label><Input type="email" className="mt-1" value={personalForm.workEmail} onChange={e => setPersonalForm(p => ({ ...p, workEmail: e.target.value }))} /></div>
+                  <div><Label>Mobile Number *</Label><Input className="mt-1" value={personalForm.mobile} onChange={e => setPersonalForm(p => ({ ...p, mobile: e.target.value }))} /></div>
+                  <div><Label>Phone Number</Label><Input className="mt-1" value={personalForm.phone} onChange={e => setPersonalForm(p => ({ ...p, phone: e.target.value }))} /></div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => setChecklist(p => ({ ...p, personalDetails: true }))}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />Mark as Complete
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Employment Details */}
+          {activeTab === "employment" && (
+            <div className="rounded-xl border bg-card p-5 space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg">Employment Details</h3>
+                {checklist.employmentDetails && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Employment Type *</Label>
+                  <Select value={employmentForm.employmentType} onValueChange={v => setEmploymentForm(p => ({ ...p, employmentType: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      {["Permanent", "Fixed-term", "Contract", "Bank / Casual"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Job Title *</Label><Input className="mt-1" value={employmentForm.jobTitle} onChange={e => setEmploymentForm(p => ({ ...p, jobTitle: e.target.value }))} /></div>
+                <div><Label>Department</Label><Input className="mt-1" value={employmentForm.department} onChange={e => setEmploymentForm(p => ({ ...p, department: e.target.value }))} /></div>
+                <div><Label>Location</Label><Input className="mt-1" value={employmentForm.location} onChange={e => setEmploymentForm(p => ({ ...p, location: e.target.value }))} /></div>
+                <div><Label>Start Date *</Label><Input type="date" className="mt-1" value={employmentForm.startDate} onChange={e => setEmploymentForm(p => ({ ...p, startDate: e.target.value }))} /></div>
+                <div><Label>End Date</Label><Input type="date" className="mt-1" value={employmentForm.endDate} onChange={e => setEmploymentForm(p => ({ ...p, endDate: e.target.value }))} /></div>
+                <div><Label>Line Manager</Label><Input className="mt-1" value={employmentForm.lineManager} onChange={e => setEmploymentForm(p => ({ ...p, lineManager: e.target.value }))} /></div>
+                <div><Label>Salary (£) *</Label><Input type="number" className="mt-1" value={employmentForm.salary} onChange={e => setEmploymentForm(p => ({ ...p, salary: e.target.value }))} /></div>
+                <div>
+                  <Label>Pay Frequency</Label>
+                  <Select value={employmentForm.payFrequency} onValueChange={v => setEmploymentForm(p => ({ ...p, payFrequency: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      {["Monthly", "Weekly", "Fortnightly", "4-Weekly"].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Contract Hours (per week)</Label><Input type="number" className="mt-1" value={employmentForm.contractHours} onChange={e => setEmploymentForm(p => ({ ...p, contractHours: e.target.value }))} /></div>
+                <div><Label>Probation Period</Label><Input className="mt-1" value={employmentForm.probationPeriod} onChange={e => setEmploymentForm(p => ({ ...p, probationPeriod: e.target.value }))} placeholder="e.g. 6 months" /></div>
+                <div><Label>Notice Period</Label><Input className="mt-1" value={employmentForm.noticePeriod} onChange={e => setEmploymentForm(p => ({ ...p, noticePeriod: e.target.value }))} placeholder="e.g. 1 month" /></div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => setChecklist(p => ({ ...p, employmentDetails: true }))}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />Mark as Complete
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Next of Kin */}
+          {activeTab === "nextofkin" && (
+            <div className="rounded-xl border bg-card p-5 space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg">Next of Kin & Emergency Contact</h3>
+                {checklist.nextOfKin && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-sm mb-3 pb-2 border-b">Next of Kin</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Full Name *</Label><Input className="mt-1" value={nokForm.nokName} onChange={e => setNokForm(p => ({ ...p, nokName: e.target.value }))} /></div>
+                  <div><Label>Relationship *</Label><Input className="mt-1" value={nokForm.nokRelationship} onChange={e => setNokForm(p => ({ ...p, nokRelationship: e.target.value }))} placeholder="e.g. Spouse, Parent" /></div>
+                  <div><Label>Phone Number *</Label><Input className="mt-1" value={nokForm.nokPhone} onChange={e => setNokForm(p => ({ ...p, nokPhone: e.target.value }))} /></div>
+                  <div><Label>Email *</Label><Input type="email" className="mt-1" value={nokForm.nokEmail} onChange={e => setNokForm(p => ({ ...p, nokEmail: e.target.value }))} /></div>
+                  <div className="col-span-2"><Label>Address *</Label><Textarea className="mt-1" value={nokForm.nokAddress} onChange={e => setNokForm(p => ({ ...p, nokAddress: e.target.value }))} /></div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-sm mb-3 pb-2 border-b">Emergency Contact</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Full Name</Label><Input className="mt-1" value={nokForm.emergencyName} onChange={e => setNokForm(p => ({ ...p, emergencyName: e.target.value }))} /></div>
+                  <div><Label>Relationship</Label><Input className="mt-1" value={nokForm.emergencyRelationship} onChange={e => setNokForm(p => ({ ...p, emergencyRelationship: e.target.value }))} /></div>
+                  <div><Label>Phone Number</Label><Input className="mt-1" value={nokForm.emergencyPhone} onChange={e => setNokForm(p => ({ ...p, emergencyPhone: e.target.value }))} /></div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => setChecklist(p => ({ ...p, nextOfKin: true }))}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />Mark as Complete
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Immigration */}
+          {activeTab === "immigration" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg">Immigration & Right to Work</h3>
+                {checklist.immigration && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+              </div>
+              <ImmigrationForm onSave={() => setChecklist(p => ({ ...p, immigration: true }))} />
+            </div>
+          )}
+
+          {/* Documents */}
+          {activeTab === "documents" && (
+            <DocumentsChecklistInline checklist={checklist} onComplete={() => setChecklist(p => ({ ...p, documents: true, bankDetails: true, references: true, dbsCheck: true }))} />
+          )}
+
+          {/* Review & Approve */}
+          {activeTab === "review" && (
+            <div className="rounded-xl border bg-card p-5 space-y-5">
+              <h3 className="font-semibold text-lg">Review & Approve</h3>
+              <p className="text-sm text-muted-foreground">Review all onboarding steps before moving this candidate to People as a live employee.</p>
+
+              <div className="space-y-2">
+                {tabs.filter(t => t.id !== "review").map(tab => (
+                  <div key={tab.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                    {tab.done ? (
+                      <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
+                    )}
+                    <span className="text-sm font-medium flex-1">{tab.label}</span>
+                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full",
+                      tab.done ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                    )}>
+                      {tab.done ? "Complete" : "Incomplete"}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{getVacancyTitle(app.vacancyId)} · {app.email}</p>
-                </div>
-                <div className="text-right shrink-0 hidden sm:block">
-                  {app.interviewDate && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                      <Calendar className="h-3 w-3" />{new Date(app.interviewDate).toLocaleDateString("en-GB")}
-                    </p>
-                  )}
-                  {app.interviewerName && <p className="text-xs text-muted-foreground">{app.interviewerName}</p>}
-                </div>
-                <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shrink-0", APP_STATUS_COLORS[app.status])}>
-                  {APP_STATUS_LABELS[app.status]}
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+                ))}
+              </div>
 
-      {selectedApp && (
-        <ApplicationDetail
-          app={{ ...selectedApp, ...applications.find(a => a.id === selectedApp.id) }}
-          vacancyTitle={vacancies.find(v => v.id === selectedApp.vacancyId)?.title}
-          onClose={() => setSelectedApp(null)}
-          onUpdate={(id, changes) => { onUpdateApp(id, changes); setSelectedApp(null); }}
-          onMoveToPeople={onMoveToPeople}
-        />
-      )}
+              {progressPct === 100 ? (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+                    <p className="text-sm text-success font-medium flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      All onboarding steps are complete. This candidate is ready to be moved to People.
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <Button variant="outline" onClick={() => {
+                      onUpdate(app.id, { onboardingStatus: "ready" });
+                    }}>
+                      Mark Ready to Start
+                    </Button>
+                    <Button onClick={() => {
+                      onUpdate(app.id, { onboardingStatus: "moved", movedToPeople: true });
+                      onMoveToPeople(app);
+                    }}>
+                      <UserCheck className="h-4 w-4 mr-1" />Move to People
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
+                  <p className="text-sm text-warning font-medium flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    {totalChecks - completedCount} step(s) still incomplete. Complete all steps before moving to People.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Documents Tab ──────────────────────────────────────────────────────────────
-function DocumentsTab() {
+// ── Documents Checklist (inline for onboarding detail) ─────────────────────────
+function DocumentsChecklistInline({ checklist, onComplete }: { checklist: OnboardingChecklist; onComplete: () => void }) {
   const [docStatuses, setDocStatuses] = useState<Record<string, "present" | "missing" | "pending">>(
     Object.fromEntries(CANDIDATE_DOCS.map(d => [d.id, d.id === "cd1" || d.id === "cd3" ? "present" : d.id === "cd2" ? "present" : d.id === "cd5" ? "pending" : "missing"]))
   );
 
   const present = Object.values(docStatuses).filter(s => s === "present").length;
-  const pending = Object.values(docStatuses).filter(s => s === "pending").length;
-  const missing = Object.values(docStatuses).filter(s => s === "missing").length;
   const total = CANDIDATE_DOCS.length;
   const pct = Math.round((present / total) * 100);
 
@@ -911,31 +1139,23 @@ function DocumentsTab() {
 
   return (
     <div className="space-y-5">
-      {/* Summary */}
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg">Onboarding Documents</h3>
+        {checklist.documents && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+      </div>
+
       <div className="rounded-xl border bg-card p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Onboarding Document Checklist</h3>
+          <span className="text-sm font-medium">Document Checklist</span>
           <span className={cn("text-sm font-bold", pct === 100 ? "text-success" : pct > 60 ? "text-warning" : "text-destructive")}>
             {pct}% complete
           </span>
         </div>
         <div className="w-full bg-muted rounded-full h-2 mb-3">
-          <div
-            className={cn("h-2 rounded-full transition-all", pct === 100 ? "bg-success" : pct > 60 ? "bg-warning" : "bg-destructive")}
-            style={{ width: `${pct}%` }}
-          />
+          <div className={cn("h-2 rounded-full transition-all", pct === 100 ? "bg-success" : pct > 60 ? "bg-warning" : "bg-destructive")} style={{ width: `${pct}%` }} />
         </div>
-        <div className="flex gap-4 text-sm">
-          <span className="text-success font-medium">{present} present</span>
-          <span className="text-warning font-medium">{pending} pending</span>
-          <span className="text-destructive font-medium">{missing} missing</span>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          These are standard onboarding documents required for new starters. Ensure all required items are collected before first day.
-        </p>
       </div>
 
-      {/* Document list */}
       <div className="rounded-xl border bg-card divide-y overflow-hidden">
         {CANDIDATE_DOCS.map(doc => {
           const s = docStatuses[doc.id];
@@ -956,7 +1176,7 @@ function DocumentsTab() {
                   <Button size="sm" variant="ghost" className="h-7 text-xs">View</Button>
                 ) : (
                   <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                    onClick={() => setDocStatuses(p => ({ ...p, [doc.id]: "pending" }))}>
+                    onClick={() => setDocStatuses(p => ({ ...p, [doc.id]: "present" }))}>
                     <Upload className="h-3 w-3" />Upload
                   </Button>
                 )}
@@ -966,15 +1186,193 @@ function DocumentsTab() {
         })}
       </div>
 
-      {/* Additional info */}
-      <div className="rounded-xl border bg-muted/30 p-4">
-        <h4 className="font-semibold text-sm mb-2">Document Retention Policy</h4>
-        <ul className="text-xs text-muted-foreground space-y-1">
-          <li>• Employment records must be retained for a minimum of 6 years after employment ends</li>
-          <li>• Right to Work documents must be kept for the duration of employment + 2 years</li>
-          <li>• DBS certificates should be re-checked every 3 years</li>
-          <li>• Training records should be updated as courses are completed</li>
-        </ul>
+      <div className="flex justify-end">
+        <Button onClick={onComplete}>
+          <CheckCircle2 className="h-4 w-4 mr-1" />Mark Documents Complete
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Onboarding Tab ─────────────────────────────────────────────────────────────
+function OnboardingTab({ applications, vacancies, onUpdateApp, onMoveToPeople }: {
+  applications: Application[];
+  vacancies: Vacancy[];
+  onUpdateApp: (id: string, changes: Partial<Application>) => void;
+  onMoveToPeople: (app: Application) => void;
+}) {
+  const [selectedCandidate, setSelectedCandidate] = useState<Application | null>(null);
+  const [statusFilter, setStatusFilter] = useState<OnboardingStatus | "all">("all");
+
+  const onboardingCandidates = applications.filter(a => a.onboardingStatus);
+  const filtered = statusFilter === "all" ? onboardingCandidates : onboardingCandidates.filter(a => a.onboardingStatus === statusFilter);
+
+  const getVacancyTitle = (id: string) => vacancies.find(v => v.id === id)?.title || "Unknown Role";
+
+  const invited = onboardingCandidates.filter(a => a.onboardingStatus === "invited").length;
+  const inProgress = onboardingCandidates.filter(a => a.onboardingStatus === "in_progress").length;
+  const review = onboardingCandidates.filter(a => a.onboardingStatus === "review").length;
+  const ready = onboardingCandidates.filter(a => a.onboardingStatus === "ready").length;
+
+  if (selectedCandidate) {
+    return (
+      <OnboardingCandidateDetail
+        app={selectedCandidate}
+        vacancyTitle={getVacancyTitle(selectedCandidate.vacancyId)}
+        onBack={() => setSelectedCandidate(null)}
+        onUpdate={(id, changes) => {
+          onUpdateApp(id, changes);
+          setSelectedCandidate(prev => prev ? { ...prev, ...changes } : null);
+        }}
+        onMoveToPeople={onMoveToPeople}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Invited", value: invited, color: "text-primary" },
+          { label: "In Progress", value: inProgress, color: "text-warning" },
+          { label: "Under Review", value: review, color: "text-secondary" },
+          { label: "Ready to Start", value: ready, color: "text-success" },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl border bg-card p-4 text-center">
+            <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-1 flex-wrap">
+        <button
+          onClick={() => setStatusFilter("all")}
+          className={cn("text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
+            statusFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"
+          )}
+        >
+          All ({onboardingCandidates.length})
+        </button>
+        {(Object.keys(ONBOARDING_STATUS_LABELS) as OnboardingStatus[]).map(s => {
+          const count = onboardingCandidates.filter(a => a.onboardingStatus === s).length;
+          return (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-lg border font-medium transition-all",
+                statusFilter === s ? ONBOARDING_STATUS_COLORS[s] : "border-border text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {ONBOARDING_STATUS_LABELS[s]} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Candidates */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground rounded-xl border bg-card">
+          <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium">No onboarding candidates</p>
+          <p className="text-sm mt-1">Candidates marked as "Offered" in vacancies can be moved to onboarding</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card divide-y overflow-hidden">
+          {filtered.map(app => (
+            <button
+              key={app.id}
+              onClick={() => setSelectedCandidate(app)}
+              className="w-full flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors text-left group"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                {app.givenName[0]}{app.familyName[0]}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{app.givenName} {app.familyName}</p>
+                <p className="text-xs text-muted-foreground">{getVacancyTitle(app.vacancyId)} · {app.email}</p>
+              </div>
+              <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border shrink-0", ONBOARDING_STATUS_COLORS[app.onboardingStatus || "invited"])}>
+                {ONBOARDING_STATUS_LABELS[app.onboardingStatus || "invited"]}
+              </span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Documents Tab (standalone) ─────────────────────────────────────────────────
+function DocumentsTab() {
+  const [docStatuses, setDocStatuses] = useState<Record<string, "present" | "missing" | "pending">>(
+    Object.fromEntries(CANDIDATE_DOCS.map(d => [d.id, d.id === "cd1" || d.id === "cd3" ? "present" : d.id === "cd2" ? "present" : d.id === "cd5" ? "pending" : "missing"]))
+  );
+
+  const present = Object.values(docStatuses).filter(s => s === "present").length;
+  const pending = Object.values(docStatuses).filter(s => s === "pending").length;
+  const missing = Object.values(docStatuses).filter(s => s === "missing").length;
+  const total = CANDIDATE_DOCS.length;
+  const pct = Math.round((present / total) * 100);
+
+  const statusColor = {
+    present: "bg-success/10 text-success border-success/20",
+    pending: "bg-warning/10 text-warning border-warning/20",
+    missing: "bg-destructive/10 text-destructive border-destructive/20",
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl border bg-card p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Onboarding Document Checklist</h3>
+          <span className={cn("text-sm font-bold", pct === 100 ? "text-success" : pct > 60 ? "text-warning" : "text-destructive")}>
+            {pct}% complete
+          </span>
+        </div>
+        <div className="w-full bg-muted rounded-full h-2 mb-3">
+          <div className={cn("h-2 rounded-full transition-all", pct === 100 ? "bg-success" : pct > 60 ? "bg-warning" : "bg-destructive")} style={{ width: `${pct}%` }} />
+        </div>
+        <div className="flex gap-4 text-sm">
+          <span className="text-success font-medium">{present} present</span>
+          <span className="text-warning font-medium">{pending} pending</span>
+          <span className="text-destructive font-medium">{missing} missing</span>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card divide-y overflow-hidden">
+        {CANDIDATE_DOCS.map(doc => {
+          const s = docStatuses[doc.id];
+          return (
+            <div key={doc.id} className="flex items-center gap-3 p-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{doc.name}</p>
+                  {doc.required && <span className="text-[10px] text-destructive font-semibold uppercase tracking-wide">Required</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">{doc.description}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", statusColor[s])}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </span>
+                {s === "present" ? (
+                  <Button size="sm" variant="ghost" className="h-7 text-xs">View</Button>
+                ) : (
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                    onClick={() => setDocStatuses(p => ({ ...p, [doc.id]: "present" }))}>
+                    <Upload className="h-3 w-3" />Upload
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -990,8 +1388,6 @@ export default function RecruitmentPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<VacancyStatus | "all">("all");
   const [movedToPeopleAlert, setMovedToPeopleAlert] = useState<string | null>(null);
-
-  const { isInternal } = useApp();
 
   const filtered = vacancies.filter(v => {
     const matchSearch = v.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -1012,8 +1408,12 @@ export default function RecruitmentPage() {
     setApplications(prev => prev.map(a => a.id === appId ? { ...a, ...changes } : a));
   };
 
+  const handleStartOnboarding = (app: Application) => {
+    handleUpdateApp(app.id, { onboardingStatus: "invited", status: "offered" });
+  };
+
   const handleMoveToPeople = (app: Application) => {
-    setMovedToPeopleAlert(`${app.givenName} ${app.familyName} has been added to the People (Workers) section.`);
+    setMovedToPeopleAlert(`${app.givenName} ${app.familyName} has been moved to the People module as a live employee.`);
     setTimeout(() => setMovedToPeopleAlert(null), 5000);
   };
 
@@ -1030,7 +1430,7 @@ export default function RecruitmentPage() {
           onBack={() => setSelectedVacancy(null)}
           onApply={() => setShowApply(true)}
           onUpdateApp={handleUpdateApp}
-          onMoveToPeople={handleMoveToPeople}
+          onStartOnboarding={handleStartOnboarding}
         />
         {showApply && (
           <ApplyModal
@@ -1048,8 +1448,8 @@ export default function RecruitmentPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Recruitment</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage vacancies, candidates and onboarding documents</p>
+          <h1 className="text-2xl font-bold">Onboarding</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage recruitment, onboarding, and pre-start compliance</p>
         </div>
         <Button onClick={() => setShowAddVacancy(true)}>
           <Plus className="h-4 w-4 mr-1" /> Post Vacancy
@@ -1061,22 +1461,31 @@ export default function RecruitmentPage() {
         <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3 text-success text-sm">
           <UserCheck className="h-4 w-4 shrink-0" />
           <span>{movedToPeopleAlert}</span>
-          <span className="text-xs text-success/70 ml-auto">Navigate to People to complete their worker profile.</span>
+          <span className="text-xs text-success/70 ml-auto">Navigate to People to view their full profile.</span>
         </div>
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="vacancies">
+      <Tabs defaultValue="onboarding">
         <TabsList>
+          <TabsTrigger value="onboarding"><ClipboardList className="h-3.5 w-3.5 mr-1.5" />Onboarding</TabsTrigger>
           <TabsTrigger value="vacancies"><Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies</TabsTrigger>
-          <TabsTrigger value="tracking"><Filter className="h-3.5 w-3.5 mr-1.5" />Applicant Tracking</TabsTrigger>
           <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1.5" />Documents</TabsTrigger>
           <TabsTrigger value="immigration"><Globe className="h-3.5 w-3.5 mr-1.5" />Immigration</TabsTrigger>
         </TabsList>
 
+        {/* ── Onboarding Tab ── */}
+        <TabsContent value="onboarding" className="mt-5">
+          <OnboardingTab
+            applications={applications}
+            vacancies={vacancies}
+            onUpdateApp={handleUpdateApp}
+            onMoveToPeople={handleMoveToPeople}
+          />
+        </TabsContent>
+
         {/* ── Vacancies Tab ── */}
         <TabsContent value="vacancies" className="mt-5 space-y-5">
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-xl border bg-card p-4">
               <p className="text-xs text-muted-foreground font-medium mb-1">Open Vacancies</p>
@@ -1092,7 +1501,6 @@ export default function RecruitmentPage() {
             </div>
           </div>
 
-          {/* Filters */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1113,7 +1521,6 @@ export default function RecruitmentPage() {
             </div>
           </div>
 
-          {/* Vacancy list */}
           <div className="space-y-3">
             {filtered.length === 0 && (
               <div className="text-center py-16 text-muted-foreground">
@@ -1164,16 +1571,6 @@ export default function RecruitmentPage() {
               );
             })}
           </div>
-        </TabsContent>
-
-        {/* ── Applicant Tracking Tab ── */}
-        <TabsContent value="tracking" className="mt-5">
-          <ApplicantTrackingTab
-            applications={applications}
-            vacancies={vacancies}
-            onUpdateApp={handleUpdateApp}
-            onMoveToPeople={handleMoveToPeople}
-          />
         </TabsContent>
 
         {/* ── Documents Tab ── */}
