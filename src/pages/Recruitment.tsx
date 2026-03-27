@@ -1,5 +1,12 @@
 import { useState, useRef } from "react";
 import ImmigrationForm from "@/components/onboarding/ImmigrationForm";
+import PersonalDetailsForm from "@/components/onboarding/PersonalDetailsForm";
+import EmploymentDetailsForm from "@/components/onboarding/EmploymentDetailsForm";
+import EmploymentHistoryForm from "@/components/onboarding/EmploymentHistoryForm";
+import ReferencesForm from "@/components/onboarding/ReferencesForm";
+import PreEmploymentChecksForm from "@/components/onboarding/PreEmploymentChecksForm";
+import TrainingInductionForm from "@/components/onboarding/TrainingInductionForm";
+import DeclarationReviewForm from "@/components/onboarding/DeclarationReviewForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
