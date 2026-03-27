@@ -433,31 +433,30 @@ function WorkerDetail({ worker, onClose }: { worker: Worker; onClose: () => void
           )}
 
           {activeTab === "immigration" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center"><FileText className="h-4 w-4 text-purple-600" /></div>
-                  <h3 className="font-bold text-sm tracking-tight">Visa & Sponsorship</h3>
-                </div>
-                <div className="bg-muted/30 p-4 rounded-xl border space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-xs text-muted-foreground font-medium uppercase">Visa Type</p><p className="text-sm font-semibold">{worker.visaType || "—"}</p></div>
-                    <div><p className="text-xs text-muted-foreground font-medium uppercase">Visa Expiry</p><p className={cn("text-sm font-bold", daysToVisa && daysToVisa < 30 ? "text-destructive" : "text-foreground")}>{worker.visaExpiry ? new Date(worker.visaExpiry).toLocaleDateString("en-GB") : "—"}</p></div>
-                  </div>
-                  <div><p className="text-xs text-muted-foreground font-medium uppercase">CoS Reference</p><p className="text-sm font-mono font-bold">{worker.cosReference || "—"}</p></div>
-                </div>
-              </section>
-
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-lg bg-pink-500/10 flex items-center justify-center"><FileText className="h-4 w-4 text-pink-600" /></div>
-                  <h3 className="font-bold text-sm tracking-tight">Passport Detail</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-xl border">
-                  <div><p className="text-xs text-muted-foreground font-medium uppercase">Passport No.</p><p className="text-sm font-semibold">{worker.passportNumber || "—"}</p></div>
-                  <div><p className="text-xs text-muted-foreground font-medium uppercase">Expiry Date</p><p className={cn("text-sm font-semibold", daysToPassport && daysToPassport < 30 ? "text-destructive" : "text-foreground")}>{worker.passportExpiry ? new Date(worker.passportExpiry).toLocaleDateString("en-GB") : "—"}</p></div>
-                </div>
-              </section>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <ImmigrationForm
+                initialData={{
+                  fullLegalName: `${worker.givenName} ${worker.familyName}`,
+                  dateOfBirth: worker.dateOfBirth,
+                  nationalities: worker.nationality ? [worker.nationality] : [],
+                  passportNumbers: worker.passportNumber || "",
+                  passportExpiry: worker.passportExpiry || "",
+                  immigrationCategory: worker.visaType === "Skilled Worker" ? "skilled_worker_company"
+                    : worker.visaType === "Student" ? "student_visa"
+                    : worker.visaType === "Graduate" ? "graduate_visa"
+                    : worker.visaType === "Global Talent" ? "global_talent"
+                    : worker.visaType === "Dependent" ? "dependent_visa"
+                    : worker.visaType === "ILR (Indefinite Leave to Remain)" ? "settled_status"
+                    : worker.visaType ? "other" : "",
+                  cosNumber: worker.cosReference || "",
+                  swVisaExpiryDate: worker.visaExpiry || "",
+                  swVisaStartDate: worker.startDate || "",
+                  jobTitleOnCos: worker.jobTitle || "",
+                  socCode: worker.socCode || "",
+                  salaryOnCos: worker.salary ? `£${worker.salary.toLocaleString()}` : "",
+                }}
+                onSave={(data) => console.log("Immigration data saved:", data)}
+              />
             </div>
           )}
 
