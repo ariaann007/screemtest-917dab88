@@ -70,12 +70,12 @@ interface Application {
 interface OnboardingChecklist {
   personalDetails: boolean;
   employmentDetails: boolean;
-  nextOfKin: boolean;
   immigration: boolean;
-  documents: boolean;
-  bankDetails: boolean;
+  employmentHistory: boolean;
   references: boolean;
-  dbsCheck: boolean;
+  preEmploymentChecks: boolean;
+  trainingInduction: boolean;
+  documents: boolean;
 }
 
 // ── Demo Data ──────────────────────────────────────────────────────────────────
