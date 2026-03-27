@@ -1071,6 +1071,7 @@ export default function RecruitmentPage() {
           <TabsTrigger value="vacancies"><Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies</TabsTrigger>
           <TabsTrigger value="tracking"><Filter className="h-3.5 w-3.5 mr-1.5" />Applicant Tracking</TabsTrigger>
           <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1.5" />Documents</TabsTrigger>
+          <TabsTrigger value="immigration"><Globe className="h-3.5 w-3.5 mr-1.5" />Immigration</TabsTrigger>
         </TabsList>
 
         {/* ── Vacancies Tab ── */}
