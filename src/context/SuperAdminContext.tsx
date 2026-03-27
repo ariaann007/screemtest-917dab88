@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { 
   PlatformTenant, PlatformAlert, PlatformAuditLog, 
-  ImpersonationSession, SuperAdminSession 
+  ImpersonationSession, SuperAdminSession, PlatformPlan 
 } from "@/types/super-admin";
 import { useToast } from "@/hooks/use-toast";
 
