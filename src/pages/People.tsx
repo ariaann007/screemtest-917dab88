@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ImmigrationForm from "@/components/onboarding/ImmigrationForm";
 import { DEMO_WORKERS, DEMO_COUNTRIES, DEMO_SOC_CODES, DEMO_WORK_LOCATIONS } from "@/data/demo";
 import { useApp } from "@/context/AppContext";
 import { StatusBadge } from "@/components/StatusBadge";
