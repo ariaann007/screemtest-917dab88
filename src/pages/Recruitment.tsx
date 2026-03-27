@@ -1180,6 +1180,19 @@ export default function RecruitmentPage() {
         <TabsContent value="documents" className="mt-5">
           <DocumentsTab />
         </TabsContent>
+
+        {/* ── Immigration Tab ── */}
+        <TabsContent value="immigration" className="mt-5">
+          <div className="space-y-4">
+            <div className="rounded-xl border bg-card p-5">
+              <h3 className="font-semibold mb-1">Immigration Data Collection</h3>
+              <p className="text-sm text-muted-foreground">
+                Comprehensive immigration status tracking for all workers. Select the immigration category to reveal category-specific fields, compliance alerts, and document requirements.
+              </p>
+            </div>
+            <ImmigrationForm onSave={(data) => console.log("Immigration data saved:", data)} />
+          </div>
+        </TabsContent>
       </Tabs>
 
       {showAddVacancy && (
