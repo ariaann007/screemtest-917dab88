@@ -10,6 +10,9 @@ import SponsorshipPage from "@/pages/Sponsorship";
 import PeoplePage from "@/pages/People";
 import RequestsPage from "@/pages/Requests";
 import RecruitmentPage from "@/pages/Recruitment";
+
+// Onboarding uses the Recruitment page (which contains the full onboarding workflow)
+const OnboardingPage = RecruitmentPage;
 import SettingsPage from "@/pages/Settings";
 import AttendancePage from "@/pages/Attendance";
 import OrganisationPage from "@/pages/Organisation";
@@ -53,6 +56,7 @@ const App = () => (
               {/* Main App Module */}
               <Route element={<AppLayout />}>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/sponsorship" element={<SponsorshipPage />} />
                 <Route path="/people" element={<PeoplePage />} />
                 <Route path="/requests" element={<RequestsPage />} />

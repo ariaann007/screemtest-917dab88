@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Award, FileText, Users, InboxIcon,
+  LayoutDashboard, Award, Users, InboxIcon,
   Settings, ShieldCheck, Building2, UserPlus, CalendarDays, Clock,
+  ChevronDown, ChevronRight, ClipboardList, DollarSign, GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
@@ -11,47 +13,119 @@ interface NavItem {
   href: string;
   icon: any;
   subItems?: { label: string; href: string }[];
+  badge?: string;
 }
 
-const clientNav: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Organisation", href: "/organisation", icon: Building2, subItems: [
-    { label: "Organisation Profile", href: "/organisation/profile" },
-    { label: "Legal Entities", href: "/organisation/legal-entities" },
-    { label: "Group Structure", href: "/organisation/group-structure" },
-    { label: "Sites & Branches", href: "/organisation/sites" },
-  ]},
-  { label: "Sponsorship", href: "/sponsorship", icon: Award },
-  { label: "People", href: "/people", icon: Users },
-  { label: "Recruitment", href: "/recruitment", icon: UserPlus },
-  { label: "Requests", href: "/requests", icon: InboxIcon },
-  { label: "Leave", href: "/leave", icon: CalendarDays },
-  { label: "Attendance", href: "/attendance", icon: Clock },
-  { label: "Settings", href: "/settings", icon: Settings },
-];
+const buildNav = (isInternal: boolean): NavItem[] => {
+  const items: NavItem[] = [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Onboarding", href: "/onboarding", icon: ClipboardList },
+    { label: "People", href: "/people", icon: Users },
+    { label: "Time", href: "/time", icon: Clock, subItems: [
+      { label: "Leave", href: "/leave" },
+      { label: "Attendance", href: "/attendance" },
+    ]},
+    { label: "Payroll", href: "/payroll", icon: DollarSign },
+    { label: "Performance & Training", href: "/performance", icon: GraduationCap },
+    { label: "Sponsorship", href: "/sponsorship", icon: Award, subItems: [
+      { label: "CoS & Reporting", href: "/sponsorship" },
+      { label: "Requests", href: "/requests" },
+    ]},
+    { label: "Organisation", href: "/organisation", icon: Building2, subItems: [
+      { label: "Organisation Profile", href: "/organisation/profile" },
+      { label: "Legal Entities", href: "/organisation/legal-entities" },
+      { label: "Group Structure", href: "/organisation/group-structure" },
+      { label: "Sites & Branches", href: "/organisation/sites" },
+      { label: "Sponsor Licences", href: "/organisation/licences" },
+      { label: "Compliance", href: "/organisation/compliance" },
+      { label: "Roles & Access", href: "/organisation/roles" },
+    ]},
+    { label: "Settings", href: "/settings", icon: Settings },
+  ];
 
-const internalNav: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Organisation", href: "/organisation", icon: Building2, subItems: [
-    { label: "Organisation Profile", href: "/organisation/profile" },
-    { label: "Legal Entities", href: "/organisation/legal-entities" },
-    { label: "Group Structure", href: "/organisation/group-structure" },
-  ]},
-  { label: "Sponsorship", href: "/sponsorship", icon: Award },
-  { label: "People", href: "/people", icon: Users },
-  { label: "Recruitment", href: "/recruitment", icon: UserPlus },
-  { label: "Requests", href: "/requests", icon: InboxIcon },
-  { label: "Leave", href: "/leave", icon: CalendarDays },
-  { label: "Attendance", href: "/attendance", icon: Clock },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Admin", href: "/admin", icon: ShieldCheck },
-];
+  if (isInternal) {
+    items.push({ label: "Admin", href: "/admin", icon: ShieldCheck, badge: "INT" });
+  }
+
+  return items;
+};
+
+function ExpandableNavItem({ item, location }: { item: NavItem; location: ReturnType<typeof useLocation> }) {
+  const isActive = item.href === "/"
+    ? location.pathname === "/"
+    : location.pathname.startsWith(item.href) ||
+      (item.subItems?.some(s => location.pathname.startsWith(s.href)) ?? false);
+
+  const [expanded, setExpanded] = useState(isActive);
+
+  const hasSubItems = item.subItems && item.subItems.length > 0;
+
+  return (
+    <li>
+      {hasSubItems ? (
+        <>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              isActive
+                ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            )}
+          >
+            <item.icon className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">{item.label}</span>
+            {item.badge && (
+              <span className="text-[10px] bg-secondary/20 text-secondary rounded px-1">{item.badge}</span>
+            )}
+            {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </button>
+          {expanded && (
+            <ul className="mt-1 ml-9 space-y-1 border-l border-sidebar-border/30 pl-3">
+              {item.subItems!.map(sub => (
+                <li key={sub.href}>
+                  <Link
+                    to={sub.href}
+                    className={cn(
+                      "block text-xs py-1.5 transition-colors",
+                      location.pathname === sub.href
+                        ? "text-sidebar-primary-foreground font-semibold"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    {sub.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : (
+        <Link
+          to={item.href}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            isActive
+              ? "bg-sidebar-primary text-sidebar-primary-foreground"
+              : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <item.icon className="h-4 w-4 shrink-0" />
+          {item.label}
+          {item.badge && (
+            <span className="ml-auto text-[10px] bg-secondary/20 text-secondary rounded px-1">{item.badge}</span>
+          )}
+        </Link>
+      )}
+    </li>
+  );
+}
 
 export function Sidebar() {
   const { currentUser, currentTenant, isInternal, setCurrentTenant, availableTenants } = useApp();
   const location = useLocation();
 
-  const navItems = isInternal ? internalNav : clientNav;
+  const navItems = buildNav(isInternal);
 
   return (
     <aside className="w-60 shrink-0 flex flex-col h-full" style={{ background: "var(--gradient-hero)" }}>
@@ -110,48 +184,9 @@ export function Sidebar() {
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto py-3 px-3">
         <ul className="space-y-0.5">
-          {navItems.map(item => {
-            const active = item.href === "/" ? location.pathname === "/" : location.pathname.startsWith(item.href);
-            return (
-              <li key={item.href}>
-                <Link
-                  to={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                    active
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
-                  {item.label === "Admin" && (
-                    <span className="ml-auto text-[10px] bg-secondary/20 text-secondary rounded px-1">INT</span>
-                  )}
-                </Link>
-                {/* Sub-items for Organisation */}
-                {item.subItems && active && (
-                  <ul className="mt-1 ml-9 space-y-1 border-l border-sidebar-border/30 pl-3">
-                    {item.subItems.map(sub => (
-                      <li key={sub.href}>
-                        <Link
-                          to={sub.href}
-                          className={cn(
-                            "block text-xs py-1.5 transition-colors",
-                            location.pathname === sub.href
-                              ? "text-sidebar-primary-foreground font-semibold"
-                              : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
-                          )}
-                        >
-                          {sub.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
+          {navItems.map(item => (
+            <ExpandableNavItem key={item.label} item={item} location={location} />
+          ))}
         </ul>
       </nav>
 
