@@ -56,6 +56,7 @@ const App = () => (
               {/* Main App Module */}
               <Route element={<AppLayout />}>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/sponsorship" element={<SponsorshipPage />} />
                 <Route path="/people" element={<PeoplePage />} />
                 <Route path="/requests" element={<RequestsPage />} />
