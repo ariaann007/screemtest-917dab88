@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import ImmigrationForm from "@/components/onboarding/ImmigrationForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { cn } from "@/lib/utils";
 import {
   Plus, X, Briefcase, MapPin, Clock, Users, ChevronRight,
   CheckCircle2, FileText, ArrowLeft, Search, Upload, MessageSquare,
-  XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp,
+  XCircle, Paperclip, UserCheck, Calendar, Filter, TrendingUp, Globe,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
@@ -1070,6 +1071,7 @@ export default function RecruitmentPage() {
           <TabsTrigger value="vacancies"><Briefcase className="h-3.5 w-3.5 mr-1.5" />Vacancies</TabsTrigger>
           <TabsTrigger value="tracking"><Filter className="h-3.5 w-3.5 mr-1.5" />Applicant Tracking</TabsTrigger>
           <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1.5" />Documents</TabsTrigger>
+          <TabsTrigger value="immigration"><Globe className="h-3.5 w-3.5 mr-1.5" />Immigration</TabsTrigger>
         </TabsList>
 
         {/* ── Vacancies Tab ── */}
@@ -1177,6 +1179,19 @@ export default function RecruitmentPage() {
         {/* ── Documents Tab ── */}
         <TabsContent value="documents" className="mt-5">
           <DocumentsTab />
+        </TabsContent>
+
+        {/* ── Immigration Tab ── */}
+        <TabsContent value="immigration" className="mt-5">
+          <div className="space-y-4">
+            <div className="rounded-xl border bg-card p-5">
+              <h3 className="font-semibold mb-1">Immigration Data Collection</h3>
+              <p className="text-sm text-muted-foreground">
+                Comprehensive immigration status tracking for all workers. Select the immigration category to reveal category-specific fields, compliance alerts, and document requirements.
+              </p>
+            </div>
+            <ImmigrationForm onSave={(data) => console.log("Immigration data saved:", data)} />
+          </div>
         </TabsContent>
       </Tabs>
 
