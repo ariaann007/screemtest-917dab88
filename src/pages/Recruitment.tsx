@@ -67,16 +67,59 @@ interface Application {
   onboardingStatus?: OnboardingStatus;
 }
 
-interface OnboardingChecklist {
-  personalDetails: boolean;
-  employmentDetails: boolean;
-  immigration: boolean;
-  employmentHistory: boolean;
-  references: boolean;
-  preEmploymentChecks: boolean;
-  trainingInduction: boolean;
-  documents: boolean;
+type SectionApproval = "not_started" | "in_progress" | "submitted" | "approved" | "rejected";
+interface SectionState {
+  completed: boolean;
+  approval: SectionApproval;
+  filledBy: "employee" | "manager";
+  rejectionNote?: string;
 }
+interface OnboardingChecklist {
+  personalDetails: SectionState;
+  employmentDetails: SectionState;
+  immigration: SectionState;
+  employmentHistory: SectionState;
+  references: SectionState;
+  preEmploymentChecks: SectionState;
+  trainingInduction: SectionState;
+  documents: SectionState;
+}
+// Sponsorship steps
+interface SponsorshipState {
+  cosAssignment: { completed: boolean; cosRef: string; socCode: string; salary: string; assignDate: string };
+  visaApplication: { completed: boolean; status: string; submittedDate: string; approvedDate: string; refNumber: string };
+  finalRtw: { completed: boolean; checkDate: string; checkedBy: string; method: string; documentRef: string };
+}
+const makeSectionState = (filledBy: "employee" | "manager"): SectionState => ({
+  completed: false, approval: "not_started", filledBy,
+});
+const makeChecklist = (): OnboardingChecklist => ({
+  personalDetails: makeSectionState("employee"),
+  employmentDetails: makeSectionState("manager"),
+  immigration: makeSectionState("employee"),
+  employmentHistory: makeSectionState("employee"),
+  references: makeSectionState("employee"),
+  preEmploymentChecks: makeSectionState("manager"),
+  trainingInduction: makeSectionState("manager"),
+  documents: makeSectionState("employee"),
+});
+const makeSponsorshipState = (): SponsorshipState => ({
+  cosAssignment: { completed: false, cosRef: "", socCode: "", salary: "", assignDate: "" },
+  visaApplication: { completed: false, status: "", submittedDate: "", approvedDate: "", refNumber: "" },
+  finalRtw: { completed: false, checkDate: "", checkedBy: "", method: "", documentRef: "" },
+});
+const requiresSponsorship = (rtw: string) => rtw === "requires_sponsorship" || rtw === "yes_visa";
+
+const APPROVAL_COLORS: Record<SectionApproval, string> = {
+  not_started: "bg-muted text-muted-foreground border-border",
+  in_progress: "bg-warning/10 text-warning border-warning/20",
+  submitted: "bg-primary/10 text-primary border-primary/20",
+  approved: "bg-success/10 text-success border-success/20",
+  rejected: "bg-destructive/10 text-destructive border-destructive/20",
+};
+const APPROVAL_LABELS: Record<SectionApproval, string> = {
+  not_started: "Not Started", in_progress: "In Progress", submitted: "Submitted for Review", approved: "Approved", rejected: "Rejected",
+};
 
 // ── Demo Data ──────────────────────────────────────────────────────────────────
 const INITIAL_VACANCIES: Vacancy[] = [
