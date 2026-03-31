@@ -67,16 +67,59 @@ interface Application {
   onboardingStatus?: OnboardingStatus;
 }
 
-interface OnboardingChecklist {
-  personalDetails: boolean;
-  employmentDetails: boolean;
-  immigration: boolean;
-  employmentHistory: boolean;
-  references: boolean;
-  preEmploymentChecks: boolean;
-  trainingInduction: boolean;
-  documents: boolean;
+type SectionApproval = "not_started" | "in_progress" | "submitted" | "approved" | "rejected";
+interface SectionState {
+  completed: boolean;
+  approval: SectionApproval;
+  filledBy: "employee" | "manager";
+  rejectionNote?: string;
 }
+interface OnboardingChecklist {
+  personalDetails: SectionState;
+  employmentDetails: SectionState;
+  immigration: SectionState;
+  employmentHistory: SectionState;
+  references: SectionState;
+  preEmploymentChecks: SectionState;
+  trainingInduction: SectionState;
+  documents: SectionState;
+}
+// Sponsorship steps
+interface SponsorshipState {
+  cosAssignment: { completed: boolean; cosRef: string; socCode: string; salary: string; assignDate: string };
+  visaApplication: { completed: boolean; status: string; submittedDate: string; approvedDate: string; refNumber: string };
+  finalRtw: { completed: boolean; checkDate: string; checkedBy: string; method: string; documentRef: string };
+}
+const makeSectionState = (filledBy: "employee" | "manager"): SectionState => ({
+  completed: false, approval: "not_started", filledBy,
+});
+const makeChecklist = (): OnboardingChecklist => ({
+  personalDetails: makeSectionState("employee"),
+  employmentDetails: makeSectionState("manager"),
+  immigration: makeSectionState("employee"),
+  employmentHistory: makeSectionState("employee"),
+  references: makeSectionState("employee"),
+  preEmploymentChecks: makeSectionState("manager"),
+  trainingInduction: makeSectionState("manager"),
+  documents: makeSectionState("employee"),
+});
+const makeSponsorshipState = (): SponsorshipState => ({
+  cosAssignment: { completed: false, cosRef: "", socCode: "", salary: "", assignDate: "" },
+  visaApplication: { completed: false, status: "", submittedDate: "", approvedDate: "", refNumber: "" },
+  finalRtw: { completed: false, checkDate: "", checkedBy: "", method: "", documentRef: "" },
+});
+const requiresSponsorship = (rtw: string) => rtw === "requires_sponsorship" || rtw === "yes_visa";
+
+const APPROVAL_COLORS: Record<SectionApproval, string> = {
+  not_started: "bg-muted text-muted-foreground border-border",
+  in_progress: "bg-warning/10 text-warning border-warning/20",
+  submitted: "bg-primary/10 text-primary border-primary/20",
+  approved: "bg-success/10 text-success border-success/20",
+  rejected: "bg-destructive/10 text-destructive border-destructive/20",
+};
+const APPROVAL_LABELS: Record<SectionApproval, string> = {
+  not_started: "Not Started", in_progress: "In Progress", submitted: "Submitted for Review", approved: "Approved", rejected: "Rejected",
+};
 
 // ── Demo Data ──────────────────────────────────────────────────────────────────
 const INITIAL_VACANCIES: Vacancy[] = [
@@ -776,6 +819,177 @@ function VacancyDetail({ vacancy, applications, onBack, onApply, onUpdateApp, on
   );
 }
 
+// ── Section Wrapper with Approve/Reject ────────────────────────────────────────
+function SectionWrapper({ section, viewAs, onSubmit, onApprove, onReject, children }: {
+  section: SectionState;
+  viewAs: "employee" | "manager";
+  onSubmit: () => void;
+  onApprove: () => void;
+  onReject: (note: string) => void;
+  children: React.ReactNode;
+}) {
+  const [rejNote, setRejNote] = useState("");
+  const [showReject, setShowReject] = useState(false);
+  const isOwner = section.filledBy === viewAs;
+  const canSubmit = isOwner && section.completed && section.approval !== "submitted" && section.approval !== "approved";
+  const canApprove = !isOwner && viewAs === "manager" && section.approval === "submitted";
+
+  return (
+    <div className="space-y-4">
+      {/* Approval status bar */}
+      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20">
+        <div className="flex items-center gap-2">
+          <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", APPROVAL_COLORS[section.approval])}>
+            {APPROVAL_LABELS[section.approval]}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Filled by: <span className="font-medium capitalize">{section.filledBy}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {canSubmit && (
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={onSubmit}>
+              <Upload className="h-3 w-3" />Submit for Review
+            </Button>
+          )}
+          {canApprove && (
+            <>
+              <Button size="sm" className="h-7 text-xs gap-1 bg-success hover:bg-success/90" onClick={onApprove}>
+                <CheckCircle2 className="h-3 w-3" />Approve
+              </Button>
+              <Button size="sm" variant="destructive" className="h-7 text-xs gap-1" onClick={() => setShowReject(true)}>
+                <XCircle className="h-3 w-3" />Reject
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+      {section.approval === "rejected" && section.rejectionNote && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold text-destructive">Rejection Note</p>
+            <p className="text-sm text-destructive/80">{section.rejectionNote}</p>
+          </div>
+        </div>
+      )}
+      {showReject && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+          <Label className="text-xs text-destructive">Reason for rejection *</Label>
+          <Textarea className="min-h-[60px] text-sm border-destructive/30" value={rejNote} onChange={e => setRejNote(e.target.value)} placeholder="Please explain what needs correction…" />
+          <div className="flex gap-2 justify-end">
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowReject(false)}>Cancel</Button>
+            <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={!rejNote.trim()} onClick={() => { onReject(rejNote); setShowReject(false); setRejNote(""); }}>
+              Confirm Rejection
+            </Button>
+          </div>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// ── Sponsorship Step Components ────────────────────────────────────────────────
+function CosAssignmentStep({ state, onComplete }: { state: SponsorshipState["cosAssignment"]; onComplete: (s: SponsorshipState["cosAssignment"]) => void }) {
+  const [form, setForm] = useState(state);
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  return (
+    <div className="rounded-xl border bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg flex items-center gap-2"><Globe className="h-5 w-5" />CoS Assignment</h3>
+        {state.completed && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+      </div>
+      <p className="text-xs text-muted-foreground">Assign Certificate of Sponsorship details before visa application.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div><Label>CoS Reference Number *</Label><Input className="mt-1" value={form.cosRef} onChange={e => set("cosRef", e.target.value)} placeholder="e.g. S1234567" /></div>
+        <div><Label>SOC Code *</Label><Input className="mt-1" value={form.socCode} onChange={e => set("socCode", e.target.value)} placeholder="e.g. 6145" /></div>
+        <div><Label>Salary on CoS *</Label><Input className="mt-1" value={form.salary} onChange={e => set("salary", e.target.value)} placeholder="e.g. £26,200" /></div>
+        <div><Label>Assignment Date *</Label><Input type="date" className="mt-1" value={form.assignDate} onChange={e => set("assignDate", e.target.value)} /></div>
+      </div>
+      <div className="flex justify-end">
+        <Button disabled={!form.cosRef || !form.socCode || !form.salary} onClick={() => onComplete({ ...form, completed: true })}>
+          <CheckCircle2 className="h-4 w-4 mr-1" />Confirm CoS Assignment
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function VisaApplicationStep({ state, onComplete }: { state: SponsorshipState["visaApplication"]; onComplete: (s: SponsorshipState["visaApplication"]) => void }) {
+  const [form, setForm] = useState(state);
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  return (
+    <div className="rounded-xl border bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg flex items-center gap-2"><FileText className="h-5 w-5" />Visa Application</h3>
+        {state.completed && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+      </div>
+      <p className="text-xs text-muted-foreground">Track the visa application until approval. Onboarding cannot proceed until visa is approved.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Application Status *</Label>
+          <Select value={form.status} onValueChange={v => set("status", v)}>
+            <SelectTrigger className="mt-1"><SelectValue placeholder="Select status…" /></SelectTrigger>
+            <SelectContent>
+              {["Pending", "Submitted", "Processing", "Approved", "Refused"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div><Label>Reference Number</Label><Input className="mt-1" value={form.refNumber} onChange={e => set("refNumber", e.target.value)} /></div>
+        <div><Label>Submitted Date</Label><Input type="date" className="mt-1" value={form.submittedDate} onChange={e => set("submittedDate", e.target.value)} /></div>
+        {form.status === "Approved" && (
+          <div><Label>Approved Date *</Label><Input type="date" className="mt-1" value={form.approvedDate} onChange={e => set("approvedDate", e.target.value)} /></div>
+        )}
+      </div>
+      {form.status !== "Approved" && (
+        <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Visa must be approved before onboarding can be finalised.</span>
+        </div>
+      )}
+      <div className="flex justify-end">
+        <Button disabled={form.status !== "Approved" || !form.approvedDate} onClick={() => onComplete({ ...form, completed: true })}>
+          <CheckCircle2 className="h-4 w-4 mr-1" />Confirm Visa Approved
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function FinalRtwCheckStep({ state, onComplete }: { state: SponsorshipState["finalRtw"]; onComplete: (s: SponsorshipState["finalRtw"]) => void }) {
+  const [form, setForm] = useState(state);
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  return (
+    <div className="rounded-xl border bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg flex items-center gap-2"><Shield className="h-5 w-5" />Final Right to Work Check</h3>
+        {state.completed && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+      </div>
+      <p className="text-xs text-muted-foreground">Post-visa RTW verification must be completed before the candidate can be onboarded.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div><Label>Check Date *</Label><Input type="date" className="mt-1" value={form.checkDate} onChange={e => set("checkDate", e.target.value)} /></div>
+        <div><Label>Checked By *</Label><Input className="mt-1" value={form.checkedBy} onChange={e => set("checkedBy", e.target.value)} placeholder="Name of verifier" /></div>
+        <div>
+          <Label>Method *</Label>
+          <Select value={form.method} onValueChange={v => set("method", v)}>
+            <SelectTrigger className="mt-1"><SelectValue placeholder="Select method…" /></SelectTrigger>
+            <SelectContent>
+              {["Manual document check", "Online share code", "IDSP check"].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div><Label>Document Reference</Label><Input className="mt-1" value={form.documentRef} onChange={e => set("documentRef", e.target.value)} /></div>
+      </div>
+      <div className="flex justify-end">
+        <Button disabled={!form.checkDate || !form.checkedBy || !form.method} onClick={() => onComplete({ ...form, completed: true })}>
+          <CheckCircle2 className="h-4 w-4 mr-1" />Confirm RTW Check
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ── Onboarding Candidate Detail ────────────────────────────────────────────────
 function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMoveToPeople }: {
   app: Application;
@@ -785,34 +999,53 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
   onMoveToPeople: (app: Application) => void;
 }) {
   const [activeTab, setActiveTab] = useState("personal");
-  const [checklist, setChecklist] = useState<OnboardingChecklist>({
-    personalDetails: false,
-    employmentDetails: false,
-    immigration: false,
-    employmentHistory: false,
-    references: false,
-    preEmploymentChecks: false,
-    trainingInduction: false,
-    documents: false,
-  });
+  const [viewAs, setViewAs] = useState<"manager" | "employee">("manager");
+  const [checklist, setChecklist] = useState<OnboardingChecklist>(makeChecklist());
+  const [sponsorship, setSponsorship] = useState<SponsorshipState>(makeSponsorshipState());
+  const needsSponsorship = requiresSponsorship(app.rightToWork);
 
-  const completedCount = Object.values(checklist).filter(Boolean).length;
+  const updateSection = (key: keyof OnboardingChecklist, changes: Partial<SectionState>) => {
+    setChecklist(p => ({ ...p, [key]: { ...p[key], ...changes } }));
+  };
+  const handleComplete = (key: keyof OnboardingChecklist) => {
+    const section = checklist[key];
+    if (section.filledBy === "manager") {
+      updateSection(key, { completed: true, approval: "approved" });
+    } else {
+      updateSection(key, { completed: true, approval: "in_progress" });
+    }
+  };
+  const handleSubmit = (key: keyof OnboardingChecklist) => updateSection(key, { approval: "submitted" });
+  const handleApprove = (key: keyof OnboardingChecklist) => updateSection(key, { approval: "approved" });
+  const handleReject = (key: keyof OnboardingChecklist, note: string) => updateSection(key, { approval: "rejected", completed: false, rejectionNote: note });
+
+  const approvedCount = Object.values(checklist).filter(s => s.approval === "approved").length;
   const totalChecks = Object.keys(checklist).length;
-  const progressPct = Math.round((completedCount / totalChecks) * 100);
+  const sponsorshipComplete = !needsSponsorship || (sponsorship.cosAssignment.completed && sponsorship.visaApplication.completed && sponsorship.finalRtw.completed);
+  const totalSteps = totalChecks + (needsSponsorship ? 3 : 0);
+  const completedSteps = approvedCount + (needsSponsorship ? [sponsorship.cosAssignment.completed, sponsorship.visaApplication.completed, sponsorship.finalRtw.completed].filter(Boolean).length : 0);
+  const progressPct = Math.round((completedSteps / totalSteps) * 100);
 
   const tabs = [
-    { id: "personal", label: "Personal Details", icon: User, done: checklist.personalDetails },
-    { id: "employment", label: "Employment Details", icon: Briefcase, done: checklist.employmentDetails },
-    { id: "immigration", label: "Right to Work & Immigration", icon: Globe, done: checklist.immigration },
-    { id: "history", label: "Employment History", icon: Clock, done: checklist.employmentHistory },
-    { id: "references", label: "References", icon: Users, done: checklist.references },
-    { id: "checks", label: "Pre-Employment Checks", icon: Shield, done: checklist.preEmploymentChecks },
-    { id: "training", label: "Training & Induction", icon: ClipboardList, done: checklist.trainingInduction },
-    { id: "documents", label: "Documents", icon: FileText, done: checklist.documents },
-    { id: "review", label: "Review & Approve", icon: UserCheck, done: false },
+    { id: "personal", label: "Personal Details", icon: User, section: checklist.personalDetails },
+    { id: "employment", label: "Employment Details", icon: Briefcase, section: checklist.employmentDetails },
+    { id: "immigration", label: "Right to Work & Immigration", icon: Globe, section: checklist.immigration },
+    { id: "history", label: "Employment History", icon: Clock, section: checklist.employmentHistory },
+    { id: "references", label: "References", icon: Users, section: checklist.references },
+    { id: "checks", label: "Pre-Employment Checks", icon: Shield, section: checklist.preEmploymentChecks },
+    { id: "training", label: "Training & Induction", icon: ClipboardList, section: checklist.trainingInduction },
+    { id: "documents", label: "Documents", icon: FileText, section: checklist.documents },
+    ...(needsSponsorship ? [
+      { id: "cos", label: "CoS Assignment", icon: Globe, section: { approval: sponsorship.cosAssignment.completed ? "approved" as SectionApproval : "not_started" as SectionApproval } },
+      { id: "visa", label: "Visa Application", icon: FileText, section: { approval: sponsorship.visaApplication.completed ? "approved" as SectionApproval : "not_started" as SectionApproval } },
+      { id: "final_rtw", label: "Final RTW Check", icon: Shield, section: { approval: sponsorship.finalRtw.completed ? "approved" as SectionApproval : "not_started" as SectionApproval } },
+    ] : []),
+    { id: "review", label: "Review & Approve", icon: UserCheck, section: { approval: "not_started" as SectionApproval } },
   ];
 
-  const sectionStatuses = tabs.filter(t => t.id !== "review").map(t => ({ id: t.id, label: t.label, done: t.done }));
+  const sectionStatuses = Object.entries(checklist).map(([key, val]) => ({
+    id: key, label: key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase()), done: val.approval === "approved",
+  }));
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -836,15 +1069,30 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
               </div>
             </div>
           </div>
-          <div className="text-right shrink-0">
+          <div className="text-right shrink-0 space-y-2">
             <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full border", ONBOARDING_STATUS_COLORS[app.onboardingStatus || "invited"])}>
               {ONBOARDING_STATUS_LABELS[app.onboardingStatus || "invited"]}
             </span>
-            <div className="mt-2">
-              <p className="text-xs text-muted-foreground">{completedCount}/{totalChecks} sections completed</p>
+            {needsSponsorship && (
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full border bg-warning/10 text-warning border-warning/20 ml-2">
+                Requires Sponsorship
+              </span>
+            )}
+            <div>
+              <p className="text-xs text-muted-foreground">{completedSteps}/{totalSteps} approved</p>
               <div className="w-32 bg-muted rounded-full h-1.5 mt-1">
                 <div className={cn("h-1.5 rounded-full transition-all", progressPct === 100 ? "bg-success" : "bg-primary")} style={{ width: `${progressPct}%` }} />
               </div>
+            </div>
+            {/* Role toggle */}
+            <div className="flex items-center gap-1 justify-end">
+              <span className="text-[10px] text-muted-foreground">Viewing as:</span>
+              {(["manager", "employee"] as const).map(r => (
+                <button key={r} onClick={() => setViewAs(r)}
+                  className={cn("text-[10px] px-2 py-0.5 rounded-full border font-medium capitalize",
+                    viewAs === r ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"
+                  )}>{r}</button>
+              ))}
             </div>
           </div>
         </div>
@@ -852,7 +1100,6 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
 
       {/* Tabs */}
       <div className="flex gap-6">
-        {/* Left sidebar checklist */}
         <div className="w-60 shrink-0 space-y-1">
           {tabs.map(tab => (
             <button
@@ -860,13 +1107,15 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
-                activeTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
+                activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               )}
             >
-              {tab.done ? (
+              {tab.section.approval === "approved" ? (
                 <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+              ) : tab.section.approval === "rejected" ? (
+                <XCircle className="h-4 w-4 text-destructive shrink-0" />
+              ) : tab.section.approval === "submitted" ? (
+                <Clock className="h-4 w-4 text-primary shrink-0" />
               ) : (
                 <tab.icon className="h-4 w-4 shrink-0" />
               )}
@@ -875,64 +1124,87 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
           ))}
         </div>
 
-        {/* Right content */}
         <div className="flex-1 min-w-0">
           {activeTab === "personal" && (
-            <PersonalDetailsForm
-              initialData={{ firstName: app.givenName, lastName: app.familyName, email: app.email, phone: app.phone, nationality: app.nationality }}
-              completed={checklist.personalDetails}
-              onComplete={() => setChecklist(p => ({ ...p, personalDetails: true }))}
-            />
+            <SectionWrapper section={checklist.personalDetails} viewAs={viewAs}
+              onSubmit={() => handleSubmit("personalDetails")} onApprove={() => handleApprove("personalDetails")} onReject={(n) => handleReject("personalDetails", n)}>
+              <PersonalDetailsForm
+                initialData={{ firstName: app.givenName, lastName: app.familyName, email: app.email, phone: app.phone, nationality: app.nationality }}
+                completed={checklist.personalDetails.completed}
+                onComplete={() => handleComplete("personalDetails")}
+              />
+            </SectionWrapper>
           )}
 
           {activeTab === "employment" && (
-            <EmploymentDetailsForm
-              initialJobTitle={vacancyTitle}
-              completed={checklist.employmentDetails}
-              onComplete={() => setChecklist(p => ({ ...p, employmentDetails: true }))}
-            />
+            <SectionWrapper section={checklist.employmentDetails} viewAs={viewAs}
+              onSubmit={() => handleSubmit("employmentDetails")} onApprove={() => handleApprove("employmentDetails")} onReject={(n) => handleReject("employmentDetails", n)}>
+              <EmploymentDetailsForm
+                initialJobTitle={vacancyTitle}
+                completed={checklist.employmentDetails.completed}
+                onComplete={() => handleComplete("employmentDetails")}
+              />
+            </SectionWrapper>
           )}
 
           {activeTab === "immigration" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Section 3: Right to Work & Immigration</h3>
-                {checklist.immigration && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+            <SectionWrapper section={checklist.immigration} viewAs={viewAs}
+              onSubmit={() => handleSubmit("immigration")} onApprove={() => handleApprove("immigration")} onReject={(n) => handleReject("immigration", n)}>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">Section 3: Right to Work & Immigration</h3>
+                  {checklist.immigration.approval === "approved" && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Approved</span>}
+                </div>
+                <ImmigrationForm onSave={() => handleComplete("immigration")} />
               </div>
-              <ImmigrationForm onSave={() => setChecklist(p => ({ ...p, immigration: true }))} />
-            </div>
+            </SectionWrapper>
           )}
 
           {activeTab === "history" && (
-            <EmploymentHistoryForm
-              completed={checklist.employmentHistory}
-              onComplete={() => setChecklist(p => ({ ...p, employmentHistory: true }))}
-            />
+            <SectionWrapper section={checklist.employmentHistory} viewAs={viewAs}
+              onSubmit={() => handleSubmit("employmentHistory")} onApprove={() => handleApprove("employmentHistory")} onReject={(n) => handleReject("employmentHistory", n)}>
+              <EmploymentHistoryForm completed={checklist.employmentHistory.completed} onComplete={() => handleComplete("employmentHistory")} />
+            </SectionWrapper>
           )}
 
           {activeTab === "references" && (
-            <ReferencesForm
-              completed={checklist.references}
-              onComplete={() => setChecklist(p => ({ ...p, references: true }))}
-            />
+            <SectionWrapper section={checklist.references} viewAs={viewAs}
+              onSubmit={() => handleSubmit("references")} onApprove={() => handleApprove("references")} onReject={(n) => handleReject("references", n)}>
+              <ReferencesForm completed={checklist.references.completed} onComplete={() => handleComplete("references")} />
+            </SectionWrapper>
           )}
 
           {activeTab === "checks" && (
-            <PreEmploymentChecksForm
-              completed={checklist.preEmploymentChecks}
-              onComplete={() => setChecklist(p => ({ ...p, preEmploymentChecks: true }))}
-            />
+            <SectionWrapper section={checklist.preEmploymentChecks} viewAs={viewAs}
+              onSubmit={() => handleSubmit("preEmploymentChecks")} onApprove={() => handleApprove("preEmploymentChecks")} onReject={(n) => handleReject("preEmploymentChecks", n)}>
+              <PreEmploymentChecksForm completed={checklist.preEmploymentChecks.completed} onComplete={() => handleComplete("preEmploymentChecks")} />
+            </SectionWrapper>
           )}
 
           {activeTab === "training" && (
-            <TrainingInductionForm
-              completed={checklist.trainingInduction}
-              onComplete={() => setChecklist(p => ({ ...p, trainingInduction: true }))}
-            />
+            <SectionWrapper section={checklist.trainingInduction} viewAs={viewAs}
+              onSubmit={() => handleSubmit("trainingInduction")} onApprove={() => handleApprove("trainingInduction")} onReject={(n) => handleReject("trainingInduction", n)}>
+              <TrainingInductionForm completed={checklist.trainingInduction.completed} onComplete={() => handleComplete("trainingInduction")} />
+            </SectionWrapper>
           )}
 
           {activeTab === "documents" && (
-            <DocumentsChecklistInline checklist={checklist} onComplete={() => setChecklist(p => ({ ...p, documents: true }))} />
+            <SectionWrapper section={checklist.documents} viewAs={viewAs}
+              onSubmit={() => handleSubmit("documents")} onApprove={() => handleApprove("documents")} onReject={(n) => handleReject("documents", n)}>
+              <DocumentsChecklistInline onComplete={() => handleComplete("documents")} completed={checklist.documents.completed} />
+            </SectionWrapper>
+          )}
+
+          {activeTab === "cos" && needsSponsorship && (
+            <CosAssignmentStep state={sponsorship.cosAssignment} onComplete={s => setSponsorship(p => ({ ...p, cosAssignment: s }))} />
+          )}
+
+          {activeTab === "visa" && needsSponsorship && (
+            <VisaApplicationStep state={sponsorship.visaApplication} onComplete={s => setSponsorship(p => ({ ...p, visaApplication: s }))} />
+          )}
+
+          {activeTab === "final_rtw" && needsSponsorship && (
+            <FinalRtwCheckStep state={sponsorship.finalRtw} onComplete={s => setSponsorship(p => ({ ...p, finalRtw: s }))} />
           )}
 
           {activeTab === "review" && (
@@ -941,6 +1213,7 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
               progressPct={progressPct}
               onMarkReady={() => onUpdate(app.id, { onboardingStatus: "ready" })}
               onMoveToPeople={() => {
+                if (progressPct < 100) return;
                 onUpdate(app.id, { onboardingStatus: "moved", movedToPeople: true });
                 onMoveToPeople(app);
               }}
@@ -953,7 +1226,7 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
 }
 
 // ── Documents Checklist (inline for onboarding detail) ─────────────────────────
-function DocumentsChecklistInline({ checklist, onComplete }: { checklist: OnboardingChecklist; onComplete: () => void }) {
+function DocumentsChecklistInline({ completed, onComplete }: { completed?: boolean; onComplete: () => void }) {
   const [docStatuses, setDocStatuses] = useState<Record<string, "present" | "missing" | "pending">>(
     Object.fromEntries(CANDIDATE_DOCS.map(d => [d.id, d.id === "cd1" || d.id === "cd3" ? "present" : d.id === "cd2" ? "present" : d.id === "cd5" ? "pending" : "missing"]))
   );
@@ -972,7 +1245,7 @@ function DocumentsChecklistInline({ checklist, onComplete }: { checklist: Onboar
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-lg">Onboarding Documents</h3>
-        {checklist.documents && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+        {completed && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
       </div>
 
       <div className="rounded-xl border bg-card p-5">
