@@ -1226,7 +1226,7 @@ function OnboardingCandidateDetail({ app, vacancyTitle, onBack, onUpdate, onMove
 }
 
 // ── Documents Checklist (inline for onboarding detail) ─────────────────────────
-function DocumentsChecklistInline({ checklist, onComplete }: { checklist: OnboardingChecklist; onComplete: () => void }) {
+function DocumentsChecklistInline({ completed, onComplete }: { completed?: boolean; onComplete: () => void }) {
   const [docStatuses, setDocStatuses] = useState<Record<string, "present" | "missing" | "pending">>(
     Object.fromEntries(CANDIDATE_DOCS.map(d => [d.id, d.id === "cd1" || d.id === "cd3" ? "present" : d.id === "cd2" ? "present" : d.id === "cd5" ? "pending" : "missing"]))
   );
@@ -1245,7 +1245,7 @@ function DocumentsChecklistInline({ checklist, onComplete }: { checklist: Onboar
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-lg">Onboarding Documents</h3>
-        {checklist.documents && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
+        {completed && <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Completed</span>}
       </div>
 
       <div className="rounded-xl border bg-card p-5">
